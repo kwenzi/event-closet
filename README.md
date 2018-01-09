@@ -45,3 +45,13 @@ await store.handleCommand('user', 'user123', userState => createUser(userState, 
 // get projection current state
 const nbUsers = await store.getProjection('nb-users'); // returns 1
 ```
+
+## options
+```javascript
+import EventStore, { mongoStorage } from '@kwenzi/event-store';
+
+const store = EventStore({
+  storage: mongoStorage('mongodb://localhost:27017/eventStore'),
+  onEvent: (event) => { console.log(event); },
+});
+```
