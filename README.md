@@ -14,13 +14,13 @@ import EventStore from '@kwenzi/event-store';
 const store = EventStore(); // default options
 
 // add an aggregate
-const userDecisionReducer = (state = { created: false }, event) => {
+const decisionProjectionReducer = (state = { created: false }, event) => {
   if (event.type === 'created') {
     return { created: true };
   }
   return state;
 };
-store.addAggregate('user', userDecisionReducer);
+store.addAggregate('user', decisionProjectionReducer);
 
 // add a read projection
 const nbUsersReducer = (state = 0, event) => {
@@ -31,16 +31,16 @@ const nbUsersReducer = (state = 0, event) => {
 };
 store.addProjection('nb-users', nbUsersReducer);
 
-const createUser = (userState, name) => {
-  if (userState.created) {
+const createUser = (decisionProjection, name) => {
+  if (decisionProjection.created) {
     throw new Error('user already created');
   }
   // return the new event to store
   // ('aggregate' and 'id' properties will be automatically set)
   return { type: 'created', name: name };
 };
-// an event happens!
-await store.handleCommand('user', 'user123', userState => createUser(userState,  'John Doe'));
+// a command is received!
+await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection,  'John Doe'));
 
 // get projection current state
 const nbUsers = await store.getProjection('nb-users'); // returns 1
