@@ -11,7 +11,7 @@ npm install @kwenzi/event-store
 ```javascript
 import EventStore from '@kwenzi/event-store';
 
-const store = EventStore(); // default options
+const store = EventStore(); // default options (uses in-memory storage, not suitable for production)
 
 // add an aggregate
 const decisionProjectionReducer = (state = { created: false }, event) => {
