@@ -21,12 +21,13 @@ module.exports = (storage, bus, aggregate, decisionProjectionReducer) => {
 
   const handleCommand = async (id, commandHandler) => {
     const projection = await getDecisionProjection(id);
-    const newEvent = commandHandler(projection);
-    await addEvent({
-      ...newEvent,
-      aggregate,
-      id,
-    });
+    let newEvents = commandHandler(projection);
+    if (!Array.isArray(newEvents)) {
+      newEvents = [newEvents];
+    }
+    await newEvents
+      .map(newEvent => () => addEvent({ ...newEvent, aggregate, id }))
+      .reduce((chain, cur) => chain.then(cur), Promise.resolve());
   };
 
   const putInQueue = (id, f) => {
