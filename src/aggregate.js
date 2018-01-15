@@ -1,5 +1,6 @@
 import Queue from 'promise-queue';
 import dummyEvent from './dummyEvent';
+import streamPromise from './stream-promise';
 
 module.exports = (storage, bus, aggregate, decisionProjectionReducer) => {
   const queues = {};
@@ -12,10 +13,8 @@ module.exports = (storage, bus, aggregate, decisionProjectionReducer) => {
   const getDecisionProjection = async (id) => {
     let projection = decisionProjectionReducer(undefined, dummyEvent);
     const stream = storage.getEvents(aggregate, id);
-    await new Promise((resolve, reject) => {
-      stream.on('data', (event) => { projection = decisionProjectionReducer(projection, event); });
-      stream.on('end', resolve);
-      stream.on('error', reject);
+    await streamPromise(stream, (event) => {
+      projection = decisionProjectionReducer(projection, event);
     });
     return projection;
   };

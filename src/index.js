@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import inMemory from './inMemoryStorage';
 import Aggregate from './aggregate';
 import Projection from './projection';
+import streamPromise from './stream-promise';
 
 export default (options = {}) => {
   const opts = {
@@ -41,11 +42,8 @@ export default (options = {}) => {
   const rebuildProjections = async () => {
     const projections = Object.values(readProjections);
     await Promise.all(projections.map(projection => projection.initialize()));
-    return new Promise((resolve, reject) => {
-      const stream = storage.getAllEvents();
-      stream.on('data', event => bus.emit('event-replay', event));
-      stream.on('end', resolve);
-      stream.on('error', reject);
+    await streamPromise(storage.getAllEvents(), (event) => {
+      bus.emit('event-replay', event);
     });
   };
 
