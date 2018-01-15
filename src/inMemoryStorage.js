@@ -1,5 +1,12 @@
 import Stream from 'stream';
 
+const arrayToStream = (arr) => {
+  const stream = new Stream.Readable({ objectMode: true });
+  arr.forEach((e) => { stream.push(e); });
+  stream.push(null);
+  return stream;
+};
+
 export default (events = []) => {
   const projections = {};
 
@@ -7,15 +14,10 @@ export default (events = []) => {
     events.push(e);
   };
 
-  const getEvents = async (aggregate, id) =>
-    events.filter(e => e.aggregate === aggregate && e.id === id);
+  const getEvents = (aggregate, id) =>
+    arrayToStream(events.filter(e => e.aggregate === aggregate && e.id === id));
 
-  const getAllEvents = () => {
-    const readable = new Stream.Readable({ objectMode: true });
-    events.forEach((e) => { readable.push(e); });
-    readable.push(null);
-    return readable;
-  };
+  const getAllEvents = () => arrayToStream(events);
 
   const storeProjection = async (name, state) => {
     projections[name] = state;

@@ -18,7 +18,7 @@ export default (options = {}) => {
     await aggregates[event.aggregate].addEvent(event);
   };
 
-  const getEvents = async (aggregate, id) => storage.getEvents(aggregate, id);
+  const getEvents = (aggregate, id) => storage.getEvents(aggregate, id);
 
   const onEvent = (callback) => {
     bus.on('event', callback);

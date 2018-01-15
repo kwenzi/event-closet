@@ -1,3 +1,4 @@
+import toArray from 'stream-to-array';
 import EventStore, { inMemoryStorage } from '../src';
 
 const decisionProjectionReducer = (state = { created: false }, event) => {
@@ -52,9 +53,8 @@ test('store and get event', async () => {
   const store = EventStore();
   store.registerAggregate('user', decisionProjectionReducer);
   await store.addEvent(createdEvent);
-  const events = await store.getEvents('user', 'user123');
-  expect(events.length).toBe(1);
-  expect(events[0]).toEqual(createdEvent);
+  const events = await toArray(store.getEvents('user', 'user123'));
+  expect(events).toEqual([createdEvent]);
 });
 
 test('register an aggregate then call handleCommand to store an event', async () => {
@@ -65,9 +65,8 @@ test('register an aggregate then call handleCommand to store an event', async ()
     'user123',
     decisionProjection => createUser(decisionProjection, 'John Doe'),
   );
-  const events = await store.getEvents('user', 'user123');
-  expect(events.length).toBe(1);
-  expect(events[0]).toEqual(createdEvent);
+  const events = await toArray(store.getEvents('user', 'user123'));
+  expect(events).toEqual([createdEvent]);
 });
 
 test('register a projection, add events, then call getProjection to get the resulting state', async () => {

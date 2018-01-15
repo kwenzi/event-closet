@@ -9,11 +9,20 @@ module.exports = (storage, bus, aggregate, decisionProjectionReducer) => {
     bus.emit('event', event);
   };
 
+  const getDecisionProjection = async (id) => {
+    let projection = decisionProjectionReducer(undefined, dummyEvent);
+    const stream = storage.getEvents(aggregate, id);
+    await new Promise((resolve, reject) => {
+      stream.on('data', (event) => { projection = decisionProjectionReducer(projection, event); });
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+    return projection;
+  };
+
   const handleCommand = async (id, commandHandler) => {
-    const events = await storage.getEvents(aggregate, id);
-    const initialValue = decisionProjectionReducer(undefined, dummyEvent);
-    const decisionProjection = events.reduce(decisionProjectionReducer, initialValue);
-    const newEvent = commandHandler(decisionProjection);
+    const projection = await getDecisionProjection(id);
+    const newEvent = commandHandler(projection);
     await addEvent({
       ...newEvent,
       aggregate,
