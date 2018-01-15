@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import inMemory from './inMemoryStorage';
+import inMemory from './in-memory-storage';
 import Aggregate from './aggregate';
 import Projection from './projection';
 import streamPromise from './stream-promise';

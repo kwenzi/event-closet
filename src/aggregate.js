@@ -1,5 +1,5 @@
 import Queue from 'promise-queue';
-import dummyEvent from './dummyEvent';
+import dummyEvent from './dummy-event';
 import streamPromise from './stream-promise';
 
 module.exports = (storage, bus, aggregate, decisionProjectionReducer) => {

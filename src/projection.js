@@ -1,6 +1,6 @@
 import Queue from 'promise-queue';
 import isEqual from 'lodash/isEqual';
-import dummyEvent from './dummyEvent';
+import dummyEvent from './dummy-event';
 
 export default (storage, bus, name, aggregates, reducer) => {
   const queue = new Queue(1);
