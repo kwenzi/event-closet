@@ -39,10 +39,14 @@ export default (options = {}) => {
   const getProjection = async name => readProjections[name].getState();
 
   const rebuildProjections = async () => {
-    const projections = Object.keys(readProjections);
+    const projections = Object.values(readProjections);
     await Promise.all(projections.map(projection => projection.initialize()));
-    const events = storage.getAllEvents();
-    events.forEach((event) => { bus.emit('event-replay', event); });
+    return new Promise((resolve, reject) => {
+      const stream = storage.getAllEvents();
+      stream.on('data', event => bus.emit('event-replay', event));
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
   };
 
   return {

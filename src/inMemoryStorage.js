@@ -1,5 +1,6 @@
-export default () => {
-  const events = [];
+import Stream from 'stream';
+
+export default (events = []) => {
   const projections = {};
 
   const storeEvent = async (e) => {
@@ -9,8 +10,11 @@ export default () => {
   const getEvents = async (aggregate, id) =>
     events.filter(e => e.aggregate === aggregate && e.id === id);
 
-  const forEach = (callback) => {
-    events.forEach(callback);
+  const getAllEvents = () => {
+    const readable = new Stream.Readable({ objectMode: true });
+    events.forEach((e) => { readable.push(e); });
+    readable.push(null);
+    return readable;
   };
 
   const storeProjection = async (name, state) => {
@@ -20,6 +24,6 @@ export default () => {
   const getProjection = async name => projections[name];
 
   return {
-    storeEvent, getEvents, forEach, storeProjection, getProjection,
+    storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
   };
 };

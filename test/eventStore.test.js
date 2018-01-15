@@ -1,4 +1,4 @@
-import EventStore from '../src';
+import EventStore, { inMemoryStorage } from '../src';
 
 const decisionProjectionReducer = (state = { created: false }, event) => {
   if (event.type === 'created') {
@@ -88,4 +88,14 @@ test('register a listener, when an event is added the listener is called', async
 
   expect(listener.mock.calls).toHaveLength(1);
   expect(listener.mock.calls[0][0]).toEqual(createdEvent);
+});
+
+test('rebuild projections from an existing event history', async () => {
+  const store = EventStore({
+    storage: inMemoryStorage([createdEvent]),
+  });
+  store.registerAggregate('user', decisionProjectionReducer);
+  store.registerProjection('nb-users', ['user'], nbUsersReducer);
+  await store.rebuildProjections();
+  expect(await store.getProjection('nb-users')).toBe(1);
 });
