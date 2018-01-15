@@ -13,7 +13,7 @@ export default (storage, bus, name, aggregates, reducer) => {
 
   const getState = async () => {
     const state = await storage.getProjection(name);
-    if (state === undefined) {
+    if (state === null) {
       return initialState();
     }
     return state;

@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import inMemory from './in-memory-storage';
+import mongo from './mongo-storage';
 import Aggregate, { getAllEvents } from './aggregate';
 import Projection from './projection';
 import streamPromise from './stream-promise';
@@ -40,6 +41,7 @@ export default (options = {}) => {
   };
 
   return {
+    init: storage.init,
     onEvent,
     registerAggregate,
     handleCommand,
@@ -50,3 +52,4 @@ export default (options = {}) => {
 };
 
 export const inMemoryStorage = inMemory;
+export const mongoStorage = mongo;
