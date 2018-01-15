@@ -1,6 +1,7 @@
-import Aggregate from '../src/aggregate';
-import { inMemoryStorage } from '../src';
 import { EventEmitter } from 'events';
+import toArray from 'stream-to-array';
+import Aggregate, { getAllEvents } from '../src/aggregate';
+import { inMemoryStorage } from '../src';
 
 const decisionProjectionReducer = (state = { created: false }, event) => {
   if (event.type === 'created') {
@@ -38,3 +39,10 @@ test('command handler can return an array of events', async () => {
   ]);
 });
 
+test('getAllEvents return events from storage, without internal fields', async () => {
+  const storage = inMemoryStorage([
+    { ...createdEvent, sequence: 0, insertDate: new Date() },
+  ]);
+
+  expect(await toArray(getAllEvents(storage))).toEqual([createdEvent]);
+});

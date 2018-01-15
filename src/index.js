@@ -1,25 +1,17 @@
 import { EventEmitter } from 'events';
 import inMemory from './in-memory-storage';
-import Aggregate from './aggregate';
+import Aggregate, { getAllEvents } from './aggregate';
 import Projection from './projection';
 import streamPromise from './stream-promise';
 
 export default (options = {}) => {
-  const opts = {
+  const { storage } = {
     storage: inMemory(),
     ...options,
   };
-  const { storage } = opts;
   const bus = new EventEmitter();
-
   const aggregates = {};
   const readProjections = {};
-
-  const addEvent = async (event) => {
-    await aggregates[event.aggregate].addEvent(event);
-  };
-
-  const getEvents = (aggregate, id) => storage.getEvents(aggregate, id);
 
   const onEvent = (callback) => {
     bus.on('event', callback);
@@ -40,16 +32,14 @@ export default (options = {}) => {
   const getProjection = async name => readProjections[name].getState();
 
   const rebuildProjections = async () => {
-    const projections = Object.values(readProjections);
-    await Promise.all(projections.map(projection => projection.initialize()));
-    await streamPromise(storage.getAllEvents(), (event) => {
+    await Promise.all(Object.values(readProjections)
+      .map(projection => projection.initialize()));
+    await streamPromise(getAllEvents(storage), (event) => {
       bus.emit('event-replay', event);
     });
   };
 
   return {
-    addEvent,
-    getEvents,
     onEvent,
     registerAggregate,
     handleCommand,

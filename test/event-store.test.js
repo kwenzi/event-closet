@@ -1,4 +1,3 @@
-import toArray from 'stream-to-array';
 import EventStore, { inMemoryStorage } from '../src';
 
 const decisionProjectionReducer = (state = { created: false }, event) => {
@@ -49,32 +48,14 @@ test('full example', async () => {
   )).rejects.toEqual(new Error('user already created'));
 });
 
-test('store and get event', async () => {
-  const store = EventStore();
-  store.registerAggregate('user', decisionProjectionReducer);
-  await store.addEvent(createdEvent);
-  const events = await toArray(store.getEvents('user', 'user123'));
-  expect(events).toEqual([createdEvent]);
-});
-
-test('register an aggregate then call handleCommand to store an event', async () => {
-  const store = EventStore();
-  store.registerAggregate('user', decisionProjectionReducer);
-  await store.handleCommand(
-    'user',
-    'user123',
-    decisionProjection => createUser(decisionProjection, 'John Doe'),
-  );
-  const events = await toArray(store.getEvents('user', 'user123'));
-  expect(events).toEqual([createdEvent]);
-});
-
 test('register a projection, add events, then call getProjection to get the resulting state', async () => {
   const store = EventStore();
   store.registerAggregate('user', decisionProjectionReducer);
   store.registerProjection('nb-users', ['user'], nbUsersReducer);
   expect(await store.getProjection('nb-users')).toBe(0);
-  await store.addEvent(createdEvent);
+
+  await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe'));
+
   expect(await store.getProjection('nb-users')).toBe(1);
 });
 
@@ -83,7 +64,8 @@ test('register a listener, when an event is added the listener is called', async
   store.registerAggregate('user', decisionProjectionReducer);
   const listener = jest.fn();
   store.onEvent(listener);
-  await store.addEvent(createdEvent);
+
+  await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe'));
 
   expect(listener.mock.calls).toHaveLength(1);
   expect(listener.mock.calls[0][0]).toEqual(createdEvent);
@@ -91,7 +73,7 @@ test('register a listener, when an event is added the listener is called', async
 
 test('rebuild projections from an existing event history', async () => {
   const store = EventStore({
-    storage: inMemoryStorage([createdEvent]),
+    storage: inMemoryStorage([{ ...createdEvent, sequence: 0, insertDate: new Date() }]),
   });
   store.registerAggregate('user', decisionProjectionReducer);
   store.registerProjection('nb-users', ['user'], nbUsersReducer);
