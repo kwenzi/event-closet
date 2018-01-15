@@ -20,7 +20,7 @@ const decisionProjectionReducer = (state = { created: false }, event) => {
   }
   return state;
 };
-store.addAggregate('user', decisionProjectionReducer);
+store.registerAggregate('user', decisionProjectionReducer);
 
 // add a read projection
 const nbUsersReducer = (state = 0, event) => {
@@ -29,7 +29,7 @@ const nbUsersReducer = (state = 0, event) => {
   }
   return state;
 };
-store.addProjection('nb-users', nbUsersReducer);
+store.registerProjection('nb-users', ['user'], nbUsersReducer);
 
 const createUser = (decisionProjection, name) => {
   if (decisionProjection.created) {

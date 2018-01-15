@@ -1,13 +1,12 @@
 {
   "name": "@kwenzi/event-store",
   "version": "1.0.0",
-  "description": "minimalist event store backed by mongodb",
-  "main": "index.js",
+  "description": "minimalist event sourcing library",
+  "main": "./lib/index.js",
   "scripts": {
-    "test": "npm run db_start && jest --runInBand",
-    "db_install": "docker pull mongo:latest && docker create --name event-store-test -p 27017:27017 mongo",
-    "db_start": "docker start event-store-test",
-    "db_stop": "docker stop event-store-test"
+    "build": "babel src -d lib",
+    "prepublishOnly": "npm run build",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -20,14 +19,19 @@
   },
   "homepage": "https://github.com/kwenzi/event-store#readme",
   "dependencies": {
+    "lodash": "^4.17.4",
+    "promise-queue": "^2.2.3",
     "simple-promise-queue": "^0.1.7"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-jest": "^22.0.4",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
     "eslint": "^4.13.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jest": "^21.4.2",
-    "jest": "^21.2.1",
-    "mongodb": "^2.2.33"
+    "jest": "^21.2.1"
   }
 }
