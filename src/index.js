@@ -26,9 +26,8 @@ export default (options = {}) => {
     readProjections[name] = Projection(storage, bus, name, onAggregates, reducer);
   };
 
-  const handleCommand = async (aggregate, id, commandHandler) => {
-    await aggregates[aggregate].handleCommand(id, commandHandler);
-  };
+  const handleCommand = async (aggregate, id, commandHandler) =>
+    aggregates[aggregate].handleCommand(id, commandHandler);
 
   const getEntityProjection = async (aggregate, id, projection) =>
     aggregates[aggregate].getProjection(id, projection);

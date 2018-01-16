@@ -50,6 +50,15 @@ test('full example', async () => {
   expect(identity).toEqual({ name: 'John Doe' });
 });
 
+test('handleCommand returns the created event', async () => {
+  const store = EventStore();
+  store.registerAggregate('user', decisionProjectionReducer);
+
+  const event = await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe'));
+
+  expect(event).toEqual(createdEvent);
+});
+
 test('handleCommand rejects when an error happens in decision projection', async () => {
   const store = EventStore();
   store.registerAggregate('user', decisionProjectionReducer);

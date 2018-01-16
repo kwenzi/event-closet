@@ -28,16 +28,14 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
 
   const handleCommand = async (id, commandHandler) => {
     const { projection, sequenceMax } = await getDecisionProjection(id);
-    let newEvents = commandHandler(projection);
-    if (!Array.isArray(newEvents)) {
-      newEvents = [newEvents];
-    }
+    const res = commandHandler(projection);
+    const completeEvent = e => ({ ...e, aggregate, id });
+    const newEvents = Array.isArray(res) ? res : [res];
     await newEvents
-      .map(newEvent => ({
-        ...newEvent, aggregate, id,
-      }))
+      .map(completeEvent)
       .map((newEvent, index) => () => addEvent(newEvent, sequenceMax + index + 1))
       .reduce((chain, cur) => chain.then(cur), Promise.resolve());
+    return Array.isArray(res) ? res.map(completeEvent) : completeEvent(res);
   };
 
   const getProjection = async (id, name) => {
