@@ -12,18 +12,18 @@ export default (options = {}) => {
   };
   const bus = new EventEmitter();
   const aggregates = {};
-  const readProjections = {};
+  const projections = {};
 
   const onEvent = (callback) => {
     bus.on('event', callback);
   };
 
-  const registerAggregate = (name, decisionProjectionReducer, entityProjectionReducers = {}) => {
-    aggregates[name] = Aggregate(storage, bus, name, decisionProjectionReducer, entityProjectionReducers);
+  const registerAggregate = (name, decisionProjection, readProjections = {}) => {
+    aggregates[name] = Aggregate(storage, bus, name, decisionProjection, readProjections);
   };
 
-  const registerProjection = (name, onAggregates, reducer) => {
-    readProjections[name] = Projection(storage, bus, name, onAggregates, reducer);
+  const registerProjection = (name, onAggregates, projection) => {
+    projections[name] = Projection(storage, bus, name, onAggregates, projection);
   };
 
   const handleCommand = async (aggregate, id, commandHandler) =>
@@ -32,10 +32,10 @@ export default (options = {}) => {
   const getEntityProjection = async (aggregate, id, projection) =>
     aggregates[aggregate].getProjection(id, projection);
 
-  const getProjection = async name => readProjections[name].getState();
+  const getProjection = async name => projections[name].getState();
 
   const rebuildProjections = async () => {
-    await Promise.all(Object.values(readProjections)
+    await Promise.all(Object.values(projections)
       .map(projection => projection.initialize()));
     await streamPromise(getAllEvents(storage), (event) => {
       bus.emit('event-replay', event);

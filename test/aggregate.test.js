@@ -3,15 +3,15 @@ import toArray from 'stream-to-array';
 import Aggregate, { getAllEvents } from '../src/aggregate';
 import { inMemoryStorage } from '../src';
 
-const decisionProjectionReducer = (state = { created: false }, event) => {
+const decisionProjection = (state = { created: false }, event) => {
   if (event.type === 'created') {
     return { created: true };
   }
   return state;
 };
 
-const createValidatedUser = (decisionProjection, name) => {
-  if (decisionProjection.created) {
+const createValidatedUser = (projection, name) => {
+  if (projection.created) {
     throw new Error('user already created');
   }
   return [{ type: 'created', name }, { type: 'validated' }];
@@ -29,9 +29,9 @@ test('command handler can return an array of events', async () => {
   const bus = new EventEmitter();
   const listenerMock = jest.fn();
   bus.on('event', listenerMock);
-  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjectionReducer);
+  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection);
 
-  await aggregate.handleCommand('user123', decisionProjection => createValidatedUser(decisionProjection, 'John Doe'));
+  await aggregate.handleCommand('user123', projection => createValidatedUser(projection, 'John Doe'));
 
   expect(listenerMock.mock.calls).toEqual([
     [createdEvent],

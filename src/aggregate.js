@@ -3,7 +3,7 @@ import through from 'through';
 import initEvent from './init-event';
 import streamPromise from './stream-promise';
 
-export default (storage, bus, aggregate, decisionProjectionReducer, entityProjectionReducers = {}) => {
+export default (storage, bus, aggregate, decisionProjection, readProjections = {}) => {
   const queues = {};
 
   const addEvent = async (event, sequence) => {
@@ -16,11 +16,11 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
   };
 
   const getDecisionProjection = async (id) => {
-    let projection = decisionProjectionReducer(undefined, initEvent);
+    let projection = decisionProjection(undefined, initEvent);
     let sequenceMax = -1;
     const stream = storage.getEvents(aggregate, id);
     await streamPromise(stream, (event) => {
-      projection = decisionProjectionReducer(projection, event);
+      projection = decisionProjection(projection, event);
       sequenceMax = event.sequence;
     });
     return { projection, sequenceMax };
@@ -39,13 +39,13 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
   };
 
   const getProjection = async (id, name) => {
-    const reducer = entityProjectionReducers[name];
-    let projection = reducer(undefined, initEvent);
+    const projection = readProjections[name];
+    let state = projection(undefined, initEvent);
     const stream = storage.getEvents(aggregate, id);
     await streamPromise(stream, (event) => {
-      projection = reducer(projection, event);
+      state = projection(state, event);
     });
-    return projection;
+    return state;
   };
 
   const putInQueue = (id, f) => {

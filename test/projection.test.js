@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import Projection from '../src/projection';
 import { inMemoryStorage } from '../src';
 
-const nbUsersReducer = (state = 0, event) => {
+const nbUsersProjection = (state = 0, event) => {
   if (event.type === 'created') {
     return state + 1;
   }
@@ -15,7 +15,7 @@ const createdEvent = {
 
 test('projection listen to events and replays', async () => {
   const bus = new EventEmitter();
-  const projection = Projection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersReducer);
+  const projection = Projection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection);
   expect(await projection.getState()).toBe(0);
   bus.emit('event', createdEvent);
   expect(await projection.getState()).toBe(1);

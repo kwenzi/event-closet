@@ -2,14 +2,14 @@ import Queue from 'promise-queue';
 import isEqual from 'lodash/isEqual';
 import initEvent from './init-event';
 
-export default (storage, bus, name, aggregates, reducer) => {
+export default (storage, bus, name, aggregates, projection) => {
   const queue = new Queue(1);
 
   const storeState = async (state) => {
     await storage.storeProjection(name, state);
   };
 
-  const initialState = () => reducer(undefined, initEvent);
+  const initialState = () => projection(undefined, initEvent);
 
   const getState = async () => {
     const state = await storage.getProjection(name);
@@ -26,7 +26,7 @@ export default (storage, bus, name, aggregates, reducer) => {
   const handleEvent = async (event) => {
     if (aggregates.includes(event.aggregate)) {
       const state = await getState();
-      const newState = reducer(state, event);
+      const newState = projection(state, event);
       if (!isEqual(state, newState)) {
         await storeState(newState);
       }
