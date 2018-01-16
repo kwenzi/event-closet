@@ -1,6 +1,6 @@
 import Queue from 'promise-queue';
 import through from 'through';
-import dummyEvent from './dummy-event';
+import initEvent from './init-event';
 import streamPromise from './stream-promise';
 
 export default (storage, bus, aggregate, decisionProjectionReducer, entityProjectionReducers = {}) => {
@@ -16,7 +16,7 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
   };
 
   const getDecisionProjection = async (id) => {
-    let projection = decisionProjectionReducer(undefined, dummyEvent);
+    let projection = decisionProjectionReducer(undefined, initEvent);
     let sequenceMax = -1;
     const stream = storage.getEvents(aggregate, id);
     await streamPromise(stream, (event) => {
@@ -29,8 +29,8 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
   const handleCommand = async (id, commandHandler) => {
     const { projection, sequenceMax } = await getDecisionProjection(id);
     const res = commandHandler(projection);
-    const completeEvent = e => ({ ...e, aggregate, id });
     const newEvents = Array.isArray(res) ? res : [res];
+    const completeEvent = e => ({ ...e, aggregate, id });
     await newEvents
       .map(completeEvent)
       .map((newEvent, index) => () => addEvent(newEvent, sequenceMax + index + 1))
@@ -40,7 +40,7 @@ export default (storage, bus, aggregate, decisionProjectionReducer, entityProjec
 
   const getProjection = async (id, name) => {
     const reducer = entityProjectionReducers[name];
-    let projection = reducer(undefined, dummyEvent);
+    let projection = reducer(undefined, initEvent);
     const stream = storage.getEvents(aggregate, id);
     await streamPromise(stream, (event) => {
       projection = reducer(projection, event);
