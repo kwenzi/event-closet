@@ -18,8 +18,8 @@ export default (options = {}) => {
     bus.on('event', callback);
   };
 
-  const registerAggregate = (name, decisionProjectionReducer) => {
-    aggregates[name] = Aggregate(storage, bus, name, decisionProjectionReducer);
+  const registerAggregate = (name, decisionProjectionReducer, entityProjectionReducers = {}) => {
+    aggregates[name] = Aggregate(storage, bus, name, decisionProjectionReducer, entityProjectionReducers);
   };
 
   const registerProjection = (name, onAggregates, reducer) => {
@@ -29,6 +29,9 @@ export default (options = {}) => {
   const handleCommand = async (aggregate, id, commandHandler) => {
     await aggregates[aggregate].handleCommand(id, commandHandler);
   };
+
+  const getEntityProjection = async (aggregate, id, projection) =>
+    aggregates[aggregate].getProjection(id, projection);
 
   const getProjection = async name => readProjections[name].getState();
 
@@ -41,10 +44,10 @@ export default (options = {}) => {
   };
 
   return {
-    init: storage.init,
     onEvent,
     registerAggregate,
     handleCommand,
+    getEntityProjection,
     registerProjection,
     getProjection,
     rebuildProjections,

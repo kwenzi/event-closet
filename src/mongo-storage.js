@@ -1,15 +1,25 @@
 import { MongoClient } from 'mongodb';
 
-export default (url, mongoOptions = {}, options = {}) => {
-  let db;
-  const { eventsCollection, projectionsCollection } = {
+export default (options = {}) => {
+  const opts = {
     eventsCollection: 'events',
     projectionsCollection: 'projections',
+    url: '',
+    connectOptions: {},
+    db: null,
     ...options,
   };
+  const {
+    eventsCollection, projectionsCollection, url, connectOptions,
+  } = opts;
+  let { db } = opts;
 
   const init = async () => {
-    db = await MongoClient.connect(url, mongoOptions);
+    db = await MongoClient.connect(url, connectOptions);
+  };
+
+  const close = async () => {
+    await db.close();
   };
 
   const storeEvent = async (event) => {
@@ -39,6 +49,6 @@ export default (url, mongoOptions = {}, options = {}) => {
   };
 
   return {
-    init, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
+    init, close, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
   };
 };

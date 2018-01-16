@@ -7,6 +7,13 @@ const decisionProjectionReducer = (state = { created: false }, event) => {
   return state;
 };
 
+const identityProjectionReducer = (state = {}, event) => {
+  if (event.type === 'created') {
+    return { name: event.name };
+  }
+  return state;
+};
+
 const nbUsersReducer = (state = 0, event) => {
   if (event.type === 'created') {
     return state + 1;
@@ -28,24 +35,28 @@ const createdEvent = {
 test('full example', async () => {
   const store = EventStore();
 
-  store.registerAggregate('user', decisionProjectionReducer);
+  store.registerAggregate('user', decisionProjectionReducer, {
+    identity: identityProjectionReducer,
+  });
 
   store.registerProjection('nb-users', ['user'], nbUsersReducer);
 
-  await store.handleCommand(
-    'user',
-    'user123',
-    decisionProjection => createUser(decisionProjection, 'John Doe'),
-  );
+  await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe'));
 
   const nbUsers = await store.getProjection('nb-users');
   expect(nbUsers).toBe(1);
 
-  await expect(store.handleCommand(
-    'user',
-    'user123',
-    decisionProjection => createUser(decisionProjection, 'John Doe'),
-  )).rejects.toEqual(new Error('user already created'));
+  const identity = await store.getEntityProjection('user', 'user123', 'identity');
+  expect(identity).toEqual({ name: 'John Doe' });
+});
+
+test('handleCommand rejects when an error happens in decision projection', async () => {
+  const store = EventStore();
+  store.registerAggregate('user', decisionProjectionReducer);
+  await store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe'));
+
+  await expect(store.handleCommand('user', 'user123', decisionProjection => createUser(decisionProjection, 'John Doe')))
+    .rejects.toEqual(new Error('user already created'));
 });
 
 test('register a projection, add events, then call getProjection to get the resulting state', async () => {

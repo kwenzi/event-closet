@@ -20,7 +20,7 @@
   "homepage": "https://github.com/kwenzi/event-store#readme",
   "dependencies": {
     "lodash": "^4.17.4",
-    "mongodb": "^3.0.1",
+    "mongodb": "^2.2.34",
     "promise-queue": "^2.2.3",
     "simple-promise-queue": "^0.1.7",
     "through": "^2.3.8"
