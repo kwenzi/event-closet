@@ -14,7 +14,7 @@ export default (options = {}) => {
   } = opts;
   let { db } = opts;
 
-  const init = async () => {
+  const connect = async () => {
     db = await MongoClient.connect(url, connectOptions);
   };
 
@@ -49,6 +49,6 @@ export default (options = {}) => {
   };
 
   return {
-    init, close, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
+    connect, close, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
   };
 };
