@@ -1,6 +1,6 @@
 {
   "name": "@kwenzi/event-store",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "minimalist event sourcing library",
   "main": "./lib/index.js",
   "scripts": {
