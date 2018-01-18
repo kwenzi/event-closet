@@ -1,7 +1,7 @@
 {
-  "name": "@kwenzi/event-store",
-  "version": "2.0.1",
-  "description": "minimalist event sourcing library",
+  "name": "event-closet",
+  "version": "0.0.1",
+  "description": "a nice place to store and organize your events",
   "main": "./lib/index.js",
   "scripts": {
     "build": "babel src -d lib",
@@ -10,19 +10,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kwenzi/event-store.git"
+    "url": "git+https://github.com/kwenzi/event-closet.git"
   },
-  "author": "",
+  "author": "thomaslule",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kwenzi/event-store/issues"
+    "url": "https://github.com/kwenzi/event-closet/issues"
   },
-  "homepage": "https://github.com/kwenzi/event-store#readme",
+  "homepage": "https://github.com/kwenzi/event-closet#readme",
   "dependencies": {
     "lodash": "^4.17.4",
     "mongodb": "^2.2.34",
     "promise-queue": "^2.2.3",
-    "simple-promise-queue": "^0.1.7",
     "through": "^2.3.8"
   },
   "devDependencies": {
