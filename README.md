@@ -46,14 +46,27 @@ await store.handleCommand('user', 'user123', projection => createUser(projection
 const nbUsers = await store.getProjection('nb-users'); // returns 1
 ```
 
+## What are events?
+Events are plain javascript object. They have some special fields and any number of custom fields.
+```javascript
+const event = {
+  // special mandatory fields
+  aggregate: 'user',
+  id: 'user123',
+  type: 'created',
+  sequence: 1,
+  insertDate: new Date(),
+  // user-defined fields
+  name: 'John Doe',
+}
+```
+
 ## options
 ```javascript
-import EventStore, { mongoStorage } from '@kwenzi/event-store';
-
-const storage = mongoStorage('mongodb://localhost:27017/eventStore');
-await storage.connect();
-const store = EventStore({ storage });
+const store = EventStore({ /* your options here */ });
 ```
+
+### storage (default: `inMemoryStorage()`)
 See below to read how storages work.
 
 ## api
@@ -81,6 +94,8 @@ const commandHandler = projection => { /* something */ return newEvents; }
 await store.handleCommand(aggregate, id, commandHandler);
 ```
 - `commandHandler` is a function that is given the decision projection and that return a new event to store, or an array of new events.
+
+  The produced events are plain javascript objects (see "What is an event" above). The only special field that the function must fill is `type`, all other special fields will be rewritten before insertion.
 
 ### getEntityProjection
 Call this function to get a projection of a single entity of your store.
