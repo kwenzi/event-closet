@@ -10,8 +10,6 @@ const arrayToStream = (arr) => {
 export default (events = []) => {
   const projections = {};
 
-  const init = async () => {};
-
   const storeEvent = async (e) => {
     events.push(e);
   };
@@ -28,6 +26,6 @@ export default (events = []) => {
   const getProjection = async name => (projections[name] === undefined ? null : projections[name]);
 
   return {
-    init, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
+    storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
   };
 };
