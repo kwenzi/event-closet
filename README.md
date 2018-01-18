@@ -165,3 +165,28 @@ const storage = mongostorage({
   projectionsCollection: 'projections', // name of the mongo projections collection
 });
 ```
+
+### Custom storage
+To support any other type of storage, you can pass a custom storage object (async function are expected to return promises):
+```javascript
+import EventStore from '@kwenzi/event-store';
+
+const storage = {
+  storeEvent: async (event) => {
+    // store a new event
+  },
+  getEvents: (aggregate, id) => {
+    // return a Readable Stream of events
+  },
+  getAllEvents: () => {
+    // return a Readable Stream of events
+  },
+  storeProjection: async (name, state) => {
+    // store a read projection
+  },
+  getProjection: async (name) => {
+    // get a read projection
+  },
+};
+const store = EventStore({ storage });
+```
