@@ -21,7 +21,7 @@ const nbUsersProjection = (state = 0, event) => {
   return state;
 };
 
-const createUser = (projection, name) => {
+const createUser = (projection, { name }) => {
   if (projection.created) {
     throw new Error('user already created');
   }
@@ -39,9 +39,11 @@ test('usage example', async () => {
 
   closet.registerEntityProjection('user', 'identity', identityProjection);
 
+  closet.registerCommand('user', 'create', createUser);
+
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);
 
-  await closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe'));
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
   const nbUsers = await closet.getProjection('nb-users');
   expect(nbUsers).toBe(1);
@@ -53,8 +55,9 @@ test('usage example', async () => {
 test('handleCommand returns the created event', async () => {
   const closet = EventCloset();
   closet.registerAggregate('user', decisionProjection);
+  closet.registerCommand('user', 'create', createUser);
 
-  const event = await closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe'));
+  const event = await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
   expect(event).toEqual(createdEvent);
 });
@@ -62,9 +65,10 @@ test('handleCommand returns the created event', async () => {
 test('handleCommand rejects when an error happens in decision projection', async () => {
   const closet = EventCloset();
   closet.registerAggregate('user', decisionProjection);
-  await closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe'));
+  closet.registerCommand('user', 'create', createUser);
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
-  await expect(closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe')))
+  await expect(closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' }))
     .rejects.toEqual(new Error('user already created'));
 });
 
@@ -72,9 +76,10 @@ test('register a projection, add events, then call getProjection to get the resu
   const closet = EventCloset();
   closet.registerAggregate('user', decisionProjection);
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);
+  closet.registerCommand('user', 'create', createUser);
   expect(await closet.getProjection('nb-users')).toBe(0);
 
-  await closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe'));
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
   expect(await closet.getProjection('nb-users')).toBe(1);
 });
@@ -82,10 +87,11 @@ test('register a projection, add events, then call getProjection to get the resu
 test('register a listener, when an event is added the listener is called', async () => {
   const closet = EventCloset();
   closet.registerAggregate('user', decisionProjection);
+  closet.registerCommand('user', 'create', createUser);
   const listener = jest.fn();
   closet.onEvent(listener);
 
-  await closet.handleCommand('user', 'user123', projection => createUser(projection, 'John Doe'));
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
   expect(listener.mock.calls).toHaveLength(1);
   expect(listener.mock.calls[0][0]).toEqual(createdEvent);

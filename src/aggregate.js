@@ -6,9 +6,14 @@ import streamPromise from './stream-promise';
 export default (storage, bus, aggregate, decisionProjection) => {
   const queues = {};
   const readProjections = {};
+  const commands = {};
 
   const registerReadProjection = (name, projection) => {
     readProjections[name] = projection;
+  };
+
+  const registerCommand = (name, command) => {
+    commands[name] = command;
   };
 
   const addEvent = async (event, sequence) => {
@@ -31,9 +36,9 @@ export default (storage, bus, aggregate, decisionProjection) => {
     return { projection, sequenceMax };
   };
 
-  const handleCommand = async (id, commandHandler) => {
+  const handleCommand = async (id, command, data) => {
     const { projection, sequenceMax } = await getDecisionProjection(id);
-    const res = commandHandler(projection);
+    const res = commands[command](projection, data);
     const newEvents = Array.isArray(res) ? res : [res];
     const completeEvent = e => ({ ...e, aggregate, id });
     await newEvents
@@ -62,8 +67,9 @@ export default (storage, bus, aggregate, decisionProjection) => {
 
   return {
     registerReadProjection,
-    handleCommand: (id, commandHandler) =>
-      putInQueue(id, () => handleCommand(id, commandHandler)),
+    registerCommand,
+    handleCommand: (id, command, data) =>
+      putInQueue(id, () => handleCommand(id, command, data)),
     getProjection: (id, name) =>
       putInQueue(id, () => getProjection(id, name)),
   };

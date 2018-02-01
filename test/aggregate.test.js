@@ -10,7 +10,7 @@ const decisionProjection = (state = { created: false }, event) => {
   return state;
 };
 
-const createValidatedUser = (projection, name) => {
+const createValidatedUser = (projection, { name }) => {
   if (projection.created) {
     throw new Error('user already created');
   }
@@ -30,8 +30,9 @@ test('command handler can return an array of events', async () => {
   const listenerMock = jest.fn();
   bus.on('event', listenerMock);
   const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection);
+  aggregate.registerCommand('create-validated', createValidatedUser);
 
-  await aggregate.handleCommand('user123', projection => createValidatedUser(projection, 'John Doe'));
+  await aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' });
 
   expect(listenerMock.mock.calls).toEqual([
     [createdEvent],

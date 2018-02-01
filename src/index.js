@@ -26,12 +26,16 @@ export default (options = {}) => {
     aggregates[aggregate].registerReadProjection(name, projection);
   };
 
+  const registerCommand = (aggregate, name, command) => {
+    aggregates[aggregate].registerCommand(name, command);
+  };
+
   const registerProjection = (name, onAggregates, projection) => {
     projections[name] = Projection(storage, bus, name, onAggregates, projection);
   };
 
-  const handleCommand = async (aggregate, id, commandHandler) =>
-    aggregates[aggregate].handleCommand(id, commandHandler);
+  const handleCommand = async (aggregate, id, command, data) =>
+    aggregates[aggregate].handleCommand(id, command, data);
 
   const getEntityProjection = async (aggregate, id, projection) =>
     aggregates[aggregate].getProjection(id, projection);
@@ -50,8 +54,9 @@ export default (options = {}) => {
     onEvent,
     registerAggregate,
     registerEntityProjection,
-    handleCommand,
     getEntityProjection,
+    registerCommand,
+    handleCommand,
     registerProjection,
     getProjection,
     rebuildProjections,
