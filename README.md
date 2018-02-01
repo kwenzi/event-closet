@@ -31,16 +31,19 @@ const nbUsersProjection = (state = 0, event) => {
 };
 closet.registerProjection('nb-users', ['user'], nbUsersProjection);
 
-const createUser = (projection, name) => {
+// add a command
+const createUser = (projection, { name }) => {
   if (projection.created) {
     throw new Error('user already created');
   }
   // return the new event to store
   // ('aggregate' and 'id' properties will be automatically set)
-  return { type: 'created', name: name };
+  return { type: 'created', name };
 };
+closet.registerCommand('user', 'create', createUser);
+
 // a command is received!
-await closet.handleCommand('user', 'user123', projection => createUser(projection,  'John Doe'));
+await closet.handleCommand('user', 'user123', { name: 'John Doe' });
 
 // get projection current state
 const nbUsers = await closet.getProjection('nb-users'); // returns 1
@@ -53,10 +56,11 @@ const event = {
   // special mandatory fields
   aggregate: 'user',
   id: 'user123',
-  type: 'created',
   sequence: 1,
   insertDate: new Date(),
   // user-defined fields
+  type: 'created',
+  version: 1,
   name: 'John Doe',
 }
 ```
@@ -76,34 +80,52 @@ Call this function to add an aggregate to your closet.
 ```javascript
 const name = 'user';
 const decisionProjection = (state, event) => { /* something */ return newState; };
-const readProjections = {
-  'user-name': (state, event) => { /* something */ return newState; },
-}
-closet.registerAggregate(name, decisionProjection, readProjections)
+closet.registerAggregate(name, decisionProjection)
 ```
 - `name` is the unique identifier of the aggregate.
 - `decisionProjection` is the reducer function that will be used to generate the projection in `handleCommand`.
-- `readProjections` is a collection of projections that we can later apply on a single entity of the aggregate with `getEntityProjection`.
+
+### registerEntityProjection
+Call this function to add a projection that we can later apply on a single entity of the aggregate with `getEntityProjection`.
+```javascript
+const aggregate = 'user';
+const name = 'identity';
+const projection = (state, event) => { /* something */ return newState; }
+closet.registerEntityProjection(aggregate, name, projection);
+```
+
+### registerCommand
+Call this function to add a command handler: something that will receive the current decision projection of the entity and some context data and will return the new event(s) to store.
+```javascript
+const aggregate = user;
+const commandName = 'create';
+const commandHandler = (projection, params) => { /* something */ return newEvents }
+closet.registerCommand(aggregate, commandName, commandHandler);
+```
+
+- `commandHandler` is a function that is given the decision projection + the command params and that return a new event to store, or an array of new events.
+
+  The produced events are plain javascript objects (see "What is an event" above). The special fields will be filled in by the closet, only user fields must be present in the object.
 
 ### handleCommand
-Call this function to handle a command on a specific entity that must generate new events.
+Call this function when a command is actually received.
 ```javascript
 const aggregate = 'user';
 const id = 'user123';
-const commandHandler = projection => { /* something */ return newEvents; }
-await closet.handleCommand(aggregate, id, commandHandler);
+const command = 'create';
+const params = { /* command params */ };
+await closet.handleCommand(aggregate, id, command, params);
 ```
-- `commandHandler` is a function that is given the decision projection and that return a new event to store, or an array of new events.
 
-  The produced events are plain javascript objects (see "What is an event" above). The only special field that the function must fill is `type`, all other special fields will be rewritten before insertion.
+**Return value**: the event(s) returned by the handler.
 
 ### getEntityProjection
 Call this function to get a projection of a single entity of your closet.
 ```javascript
 const aggregate = 'user';
 const id = 'user123';
-const projection = 'user-name';
-const userName = await closet.getEntityProjection(aggregate, id, projection);
+const projection = 'identity';
+const identity = await closet.getEntityProjection(aggregate, id, projection);
 ```
 
 ### registerProjection
@@ -142,6 +164,7 @@ await closet.rebuildProjections();
 Everything is stored in memory, everything is lost when the app exits.
 ```javascript
 import EventCloset, { inMemoryStorage } from 'event-closet';
+
 const closet = EventCloset({ storage: inMemoryStorage() });
 ```
 
