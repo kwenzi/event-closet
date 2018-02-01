@@ -37,7 +37,7 @@ const createUser = (projection, { name }) => {
     throw new Error('user already created');
   }
   // return the new event to store
-  // ('aggregate' and 'id' properties will be automatically set)
+  // (mandatory fields like 'aggregate' and 'id' will be automatically set)
   return { type: 'created', name };
 };
 closet.registerCommand('user', 'create', createUser);
