@@ -18,8 +18,12 @@ export default (options = {}) => {
     bus.on('event', callback);
   };
 
-  const registerAggregate = (name, decisionProjection, readProjections = {}) => {
-    aggregates[name] = Aggregate(storage, bus, name, decisionProjection, readProjections);
+  const registerAggregate = (name, decisionProjection) => {
+    aggregates[name] = Aggregate(storage, bus, name, decisionProjection);
+  };
+
+  const registerEntityProjection = (aggregate, name, projection) => {
+    aggregates[aggregate].registerReadProjection(name, projection);
   };
 
   const registerProjection = (name, onAggregates, projection) => {
@@ -45,6 +49,7 @@ export default (options = {}) => {
   return {
     onEvent,
     registerAggregate,
+    registerEntityProjection,
     handleCommand,
     getEntityProjection,
     registerProjection,

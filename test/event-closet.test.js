@@ -32,12 +32,12 @@ const createdEvent = {
   aggregate: 'user', id: 'user123', type: 'created', name: 'John Doe',
 };
 
-test('full example', async () => {
+test('usage example', async () => {
   const closet = EventCloset();
 
-  closet.registerAggregate('user', decisionProjection, {
-    identity: identityProjection,
-  });
+  closet.registerAggregate('user', decisionProjection);
+
+  closet.registerEntityProjection('user', 'identity', identityProjection);
 
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);
 

@@ -3,8 +3,13 @@ import through from 'through';
 import initEvent from './init-event';
 import streamPromise from './stream-promise';
 
-export default (storage, bus, aggregate, decisionProjection, readProjections = {}) => {
+export default (storage, bus, aggregate, decisionProjection) => {
   const queues = {};
+  const readProjections = {};
+
+  const registerReadProjection = (name, projection) => {
+    readProjections[name] = projection;
+  };
 
   const addEvent = async (event, sequence) => {
     await storage.storeEvent({
@@ -56,6 +61,7 @@ export default (storage, bus, aggregate, decisionProjection, readProjections = {
   };
 
   return {
+    registerReadProjection,
     handleCommand: (id, commandHandler) =>
       putInQueue(id, () => handleCommand(id, commandHandler)),
     getProjection: (id, name) =>
