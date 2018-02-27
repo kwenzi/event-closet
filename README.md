@@ -43,7 +43,7 @@ const createUser = (projection, { name }) => {
 closet.registerCommand('user', 'create', createUser);
 
 // a command is received!
-await closet.handleCommand('user', 'user123', { name: 'John Doe' });
+await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
 // get projection current state
 const nbUsers = await closet.getProjection('nb-users'); // returns 1
