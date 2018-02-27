@@ -49,6 +49,16 @@ await closet.handleCommand('user', 'user123', { name: 'John Doe' });
 const nbUsers = await closet.getProjection('nb-users'); // returns 1
 ```
 
+Or with the promises syntax instead of async/await:
+
+```javascript
+closet.handleCommand('user', 'user123', { name: 'John Doe' })
+.then(() => closet.getProjection('nb-users'))
+.then((nbUsers) => {
+  // nbUsers === 1
+});
+```
+
 ## What are events?
 Events are plain javascript object. They have some special fields and any number of custom fields.
 ```javascript
