@@ -2,7 +2,11 @@ import Queue from 'promise-queue';
 import isEqual from 'lodash/isEqual';
 import initEvent from './init-event';
 
-export default (storage, bus, name, aggregates, projection) => {
+export default (storage, bus, name, aggregates, projection, options = {}) => {
+  const params = {
+    onChange: () => null,
+    ...options,
+  };
   const queue = new Queue(1);
 
   const storeState = async (state) => {
@@ -29,6 +33,7 @@ export default (storage, bus, name, aggregates, projection) => {
       const newState = projection(state, event);
       if (!isEqual(state, newState)) {
         await storeState(newState);
+        params.onChange(newState, event);
       }
     }
   };

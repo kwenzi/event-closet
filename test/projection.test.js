@@ -24,3 +24,14 @@ test('projection listen to events and replays', async () => {
   bus.emit('event-replay', createdEvent);
   expect(await projection.getState()).toBe(1);
 });
+
+test('onChange is run on projection change', async () => {
+  const bus = new EventEmitter();
+  const onChange = jest.fn();
+  const projection = Projection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection, {
+    onChange,
+  });
+  bus.emit('event', createdEvent);
+  expect(await projection.getState()).toBe(1);
+  expect(onChange).toHaveBeenCalledWith(1, createdEvent);
+});

@@ -30,8 +30,8 @@ export default (options = {}) => {
     aggregates[aggregate].registerCommand(name, command);
   };
 
-  const registerProjection = (name, onAggregates, projection) => {
-    projections[name] = Projection(storage, bus, name, onAggregates, projection);
+  const registerProjection = (name, onAggregates, projection, opts) => {
+    projections[name] = Projection(storage, bus, name, onAggregates, projection, opts);
   };
 
   const handleCommand = async (aggregate, id, command, data) =>
