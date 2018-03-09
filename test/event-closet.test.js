@@ -99,7 +99,9 @@ test('register a listener, when an event is added the listener is called', async
 
 test('rebuild projections from an existing event history', async () => {
   const closet = EventCloset({
-    storage: inMemoryStorage([{ ...createdEvent, sequence: 0, insertDate: new Date() }]),
+    storage: inMemoryStorage([
+      { ...createdEvent, sequence: 0, insertDate: new Date().toISOString() },
+    ]),
   });
   closet.registerAggregate('user', decisionProjection);
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);

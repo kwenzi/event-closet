@@ -42,7 +42,7 @@ test('command handler can return an array of events', async () => {
 
 test('getAllEvents return events from storage, without internal fields', async () => {
   const storage = inMemoryStorage([
-    { ...createdEvent, sequence: 0, insertDate: new Date() },
+    { ...createdEvent, sequence: 0, insertDate: new Date().toISOString() },
   ]);
 
   expect(await toArray(getAllEvents(storage))).toEqual([createdEvent]);

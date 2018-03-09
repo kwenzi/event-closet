@@ -20,7 +20,7 @@ export default (storage, bus, aggregate, decisionProjection) => {
     await storage.storeEvent({
       ...event,
       sequence,
-      insertDate: new Date(),
+      insertDate: new Date().toISOString(),
     });
     bus.emit('event', event);
   };

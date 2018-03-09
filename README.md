@@ -67,7 +67,7 @@ const event = {
   aggregate: 'user',
   id: 'user123',
   sequence: 1,
-  insertDate: new Date(),
+  insertDate: new Date().toISOString(),
   // user-defined fields
   type: 'created',
   version: 1,
