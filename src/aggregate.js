@@ -75,9 +75,13 @@ export default (storage, bus, aggregate, decisionProjection) => {
   };
 };
 
-export const getAllEvents = storage =>
-  storage.getAllEvents()
-    .pipe(through(function write(event) {
-      const { sequence, insertDate, ...rest } = event;
-      this.queue(rest);
-    }));
+export const getAllEvents = (storage) => {
+  const removeFields = through(function write(event) {
+    const { sequence, insertDate, ...rest } = event;
+    this.queue(rest);
+  });
+  const allEvents = storage.getAllEvents();
+  allEvents.on('error', (err) => { removeFields.emit('error', err); });
+  allEvents.pipe(removeFields);
+  return removeFields;
+};
