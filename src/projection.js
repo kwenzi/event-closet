@@ -27,22 +27,21 @@ export default (storage, bus, name, aggregates, projection, options = {}) => {
     await storeState(initialState());
   };
 
-  const handleEvent = async (event) => {
+  const handleEvent = async (event, isReplay) => {
     if (aggregates.includes(event.aggregate)) {
       const state = await getState();
       const newState = projection(state, event);
       if (!isEqual(state, newState)) {
         await storeState(newState);
-        params.onChange(newState, event);
+        if (!isReplay) params.onChange(newState, event);
       }
     }
   };
 
   const putInQueue = f => (...args) => queue.add(() => f(...args));
 
-  bus.on('event', putInQueue(handleEvent));
-  bus.on('event-replay', putInQueue(handleEvent));
-
+  bus.on('event', putInQueue(event => handleEvent(event, false)));
+  bus.on('event-replay', putInQueue(event => handleEvent(event, true)));
 
   return {
     initialize: putInQueue(initialize),
