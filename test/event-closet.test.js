@@ -59,7 +59,7 @@ test('handleCommand returns the created event', async () => {
 
   const event = await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
-  expect(event).toEqual(createdEvent);
+  expect(event).toMatchObject(createdEvent);
 });
 
 test('handleCommand rejects when an error happens in decision projection', async () => {
@@ -93,8 +93,8 @@ test('register a listener, when an event is added the listener is called', async
 
   await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
-  expect(listener.mock.calls).toHaveLength(1);
-  expect(listener.mock.calls[0][0]).toEqual(createdEvent);
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(listener.mock.calls[0][0]).toMatchObject(createdEvent);
 });
 
 test('rebuild projections from an existing event history', async () => {

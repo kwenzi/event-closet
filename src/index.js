@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import inMemory from './in-memory-storage';
 import mongo from './mongo-storage';
-import Aggregate, { getAllEvents } from './aggregate';
+import Aggregate from './aggregate';
 import Projection from './projection';
 import streamPromise from './stream-promise';
 
@@ -45,7 +45,7 @@ export default (options = {}) => {
   const rebuildProjections = async () => {
     await Promise.all(Object.values(projections)
       .map(projection => projection.initialize()));
-    await streamPromise(getAllEvents(storage), (event) => {
+    await streamPromise(storage.getAllEvents(), (event) => {
       bus.emit('event-replay', event);
     });
   };

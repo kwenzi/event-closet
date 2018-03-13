@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
-import toArray from 'stream-to-array';
-import Aggregate, { getAllEvents } from '../src/aggregate';
+import Aggregate from '../src/aggregate';
 import { inMemoryStorage } from '../src';
 
 const decisionProjection = (state = { created: false }, event) => {
@@ -34,16 +33,7 @@ test('command handler can return an array of events', async () => {
 
   await aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' });
 
-  expect(listenerMock.mock.calls).toEqual([
-    [createdEvent],
-    [validatedEvent],
-  ]);
-});
-
-test('getAllEvents return events from storage, without internal fields', async () => {
-  const storage = inMemoryStorage([
-    { ...createdEvent, sequence: 0, insertDate: new Date().toISOString() },
-  ]);
-
-  expect(await toArray(getAllEvents(storage))).toEqual([createdEvent]);
+  expect(listenerMock).toHaveBeenCalledTimes(2);
+  expect(listenerMock.mock.calls[0][0]).toMatchObject(createdEvent);
+  expect(listenerMock.mock.calls[1][0]).toMatchObject(validatedEvent);
 });

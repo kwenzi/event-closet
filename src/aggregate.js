@@ -1,5 +1,4 @@
 import Queue from 'promise-queue';
-import through from 'through';
 import initEvent from './init-event';
 import streamPromise from './stream-promise';
 
@@ -16,12 +15,8 @@ export default (storage, bus, aggregate, decisionProjection) => {
     commands[name] = command;
   };
 
-  const addEvent = async (event, sequence) => {
-    await storage.storeEvent({
-      ...event,
-      sequence,
-      insertDate: new Date().toISOString(),
-    });
+  const addEvent = async (event) => {
+    await storage.storeEvent(event);
     bus.emit('event', event);
   };
 
@@ -39,13 +34,18 @@ export default (storage, bus, aggregate, decisionProjection) => {
   const handleCommand = async (id, command, data) => {
     const { projection, sequenceMax } = await getDecisionProjection(id);
     const res = commands[command](projection, data);
-    const newEvents = Array.isArray(res) ? res : [res];
-    const completeEvent = e => ({ ...e, aggregate, id });
+    const newEvents = (Array.isArray(res) ? res : [res])
+      .map((e, index) => ({
+        ...e,
+        aggregate,
+        id,
+        insertDate: new Date().toISOString(),
+        sequence: sequenceMax + index + 1,
+      }));
     await newEvents
-      .map(completeEvent)
-      .map((newEvent, index) => () => addEvent(newEvent, sequenceMax + index + 1))
+      .map(newEvent => () => addEvent(newEvent))
       .reduce((chain, cur) => chain.then(cur), Promise.resolve());
-    return Array.isArray(res) ? res.map(completeEvent) : completeEvent(res);
+    return Array.isArray(res) ? newEvents : newEvents[0];
   };
 
   const getProjection = async (id, name) => {
@@ -73,15 +73,4 @@ export default (storage, bus, aggregate, decisionProjection) => {
     getProjection: (id, name) =>
       putInQueue(id, () => getProjection(id, name)),
   };
-};
-
-export const getAllEvents = (storage) => {
-  const removeFields = through(function write(event) {
-    const { sequence, insertDate, ...rest } = event;
-    this.queue(rest);
-  });
-  const allEvents = storage.getAllEvents();
-  allEvents.on('error', (err) => { removeFields.emit('error', err); });
-  allEvents.pipe(removeFields);
-  return removeFields;
 };
