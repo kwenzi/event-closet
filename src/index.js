@@ -6,8 +6,9 @@ import Projection from './projection';
 import streamPromise from './stream-promise';
 
 export default (options = {}) => {
-  const { storage } = {
+  const { storage, snapshotEvery } = {
     storage: inMemory(),
+    snapshotEvery: null,
     ...options,
   };
   const bus = new EventEmitter();
@@ -19,7 +20,7 @@ export default (options = {}) => {
   };
 
   const registerAggregate = (name, decisionProjection) => {
-    aggregates[name] = Aggregate(storage, bus, name, decisionProjection);
+    aggregates[name] = Aggregate(storage, bus, name, decisionProjection, snapshotEvery);
   };
 
   const registerEntityProjection = (aggregate, name, projection) => {

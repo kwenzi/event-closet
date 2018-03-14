@@ -2,7 +2,7 @@ import Queue from 'promise-queue';
 import initEvent from './init-event';
 import streamPromise from './stream-promise';
 
-export default (storage, bus, aggregate, decisionProjection) => {
+export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
   const queues = {};
   const readProjections = {};
   const commands = {};
@@ -21,9 +21,22 @@ export default (storage, bus, aggregate, decisionProjection) => {
   };
 
   const getDecisionProjection = async (id) => {
-    let projection = decisionProjection(undefined, initEvent);
-    let sequenceMax = -1;
-    const stream = storage.getEvents(aggregate, id);
+    let projection;
+    let stream;
+    if (snapshotEvery) {
+      const snapshot = await storage.getSnapshot(aggregate, id, '__decision__');
+      if (snapshot) {
+        projection = snapshot.state;
+        stream = storage.getEvents(aggregate, id, snapshot.sequence);
+      } else {
+        projection = decisionProjection(undefined, initEvent);
+        stream = storage.getEvents(aggregate, id);
+      }
+    } else {
+      projection = decisionProjection(undefined, initEvent);
+      stream = storage.getEvents(aggregate, id);
+    }
+    let sequenceMax = 0;
     await streamPromise(stream, (event) => {
       projection = decisionProjection(projection, event);
       sequenceMax = event.sequence;
@@ -42,6 +55,16 @@ export default (storage, bus, aggregate, decisionProjection) => {
         insertDate: new Date().toISOString(),
         sequence: sequenceMax + index + 1,
       }));
+    let newProj = projection;
+    await newEvents
+      .map((e) => {
+        newProj = decisionProjection(newProj, e);
+        if (snapshotEvery && e.sequence % snapshotEvery === 0) {
+          return () => storage.storeSnapshot(aggregate, e.id, '__decision__', { sequence: e.sequence, state: newProj });
+        }
+        return () => Promise.resolve();
+      })
+      .reduce((chain, cur) => chain.then(cur), Promise.resolve());
     await newEvents
       .map(newEvent => () => addEvent(newEvent))
       .reduce((chain, cur) => chain.then(cur), Promise.resolve());

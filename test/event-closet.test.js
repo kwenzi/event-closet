@@ -11,6 +11,9 @@ const identityProjection = (state = {}, event) => {
   if (event.type === 'created') {
     return { name: event.name };
   }
+  if (event.type === 'changed-name') {
+    return { name: event.name };
+  }
   return state;
 };
 
@@ -28,8 +31,15 @@ const createUser = (projection, { name }) => {
   return { type: 'created', name };
 };
 
-const createdEvent = {
-  aggregate: 'user', id: 'user123', type: 'created', name: 'John Doe',
+const createdEvent = name => ({
+  aggregate: 'user', id: 'user123', type: 'created', name,
+});
+
+const userChangeName = (projection, { name }) => {
+  if (!projection.created) {
+    throw new Error('user doesnt exist');
+  }
+  return { type: 'changed-name', name };
 };
 
 test('usage example', async () => {
@@ -59,7 +69,7 @@ test('handleCommand returns the created event', async () => {
 
   const event = await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
-  expect(event).toMatchObject(createdEvent);
+  expect(event).toMatchObject(createdEvent('John Doe'));
 });
 
 test('handleCommand rejects when an error happens in decision projection', async () => {
@@ -94,17 +104,33 @@ test('register a listener, when an event is added the listener is called', async
   await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
 
   expect(listener).toHaveBeenCalledTimes(1);
-  expect(listener.mock.calls[0][0]).toMatchObject(createdEvent);
+  expect(listener.mock.calls[0][0]).toMatchObject(createdEvent('John Doe'));
 });
 
 test('rebuild projections from an existing event history', async () => {
   const closet = EventCloset({
     storage: inMemoryStorage([
-      { ...createdEvent, sequence: 0, insertDate: new Date().toISOString() },
+      { ...createdEvent('John Doe'), sequence: 0, insertDate: new Date().toISOString() },
     ]),
   });
   closet.registerAggregate('user', decisionProjection);
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);
   await closet.rebuildProjections();
   expect(await closet.getProjection('nb-users')).toBe(1);
+});
+
+test('works with snapshots activated', async () => {
+  const storage = inMemoryStorage();
+  const closet = EventCloset({ storage, snapshotEvery: 2 });
+  closet.registerAggregate('user', decisionProjection);
+  closet.registerCommand('user', 'create', createUser);
+  closet.registerCommand('user', 'rename', userChangeName);
+  closet.registerEntityProjection('user', 'identity', identityProjection);
+
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
+  await closet.handleCommand('user', 'user123', 'rename', { name: 'Jane Doe' });
+  await closet.handleCommand('user', 'user123', 'rename', { name: 'Calamity Jane' });
+
+  expect(await closet.getEntityProjection('user', 'user123', 'identity')).toEqual({ name: 'Calamity Jane' });
+  expect(await storage.getSnapshot('user', 'user123', '__decision__')).toEqual({ sequence: 2, state: { created: true } });
 });

@@ -9,6 +9,15 @@ const decisionProjection = (state = { created: false }, event) => {
   return state;
 };
 
+const createUser = (projection, { name }) => {
+  if (projection.created) {
+    throw new Error('user already created');
+  }
+  return { type: 'created', name };
+};
+
+const validateUser = () => ({ type: 'validated' });
+
 const createValidatedUser = (projection, { name }) => {
   if (projection.created) {
     throw new Error('user already created');
@@ -28,7 +37,7 @@ test('command handler can return an array of events', async () => {
   const bus = new EventEmitter();
   const listenerMock = jest.fn();
   bus.on('event', listenerMock);
-  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection);
+  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection, null);
   aggregate.registerCommand('create-validated', createValidatedUser);
 
   await aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' });
@@ -36,4 +45,30 @@ test('command handler can return an array of events', async () => {
   expect(listenerMock).toHaveBeenCalledTimes(2);
   expect(listenerMock.mock.calls[0][0]).toMatchObject(createdEvent);
   expect(listenerMock.mock.calls[1][0]).toMatchObject(validatedEvent);
+});
+
+test('use snapshots in storage', async () => {
+  const storage = inMemoryStorage();
+  storage.getSnapshot = jest.fn().mockReturnValue({ sequence: 2, state: { created: true } });
+  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, 2);
+  aggregate.registerCommand('create-validated', createValidatedUser);
+
+  await expect(aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' }))
+    .rejects.toEqual(new Error('user already created'));
+
+  expect(storage.getSnapshot).toHaveBeenCalledWith('user', 'user123', '__decision__');
+});
+
+test('save snapshot every 2 event', async () => {
+  const storage = inMemoryStorage();
+  storage.storeSnapshot = jest.fn().mockReturnValue(Promise.resolve());
+  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, 2);
+  aggregate.registerCommand('create', createUser);
+  aggregate.registerCommand('validate', validateUser);
+
+  await aggregate.handleCommand('user123', 'create', { name: 'John Doe' });
+  expect(storage.storeSnapshot).not.toHaveBeenCalled();
+
+  await aggregate.handleCommand('user123', 'validate');
+  expect(storage.storeSnapshot).toHaveBeenCalledWith('user', 'user123', '__decision__', { sequence: 2, state: { created: true } });
 });
