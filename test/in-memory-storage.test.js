@@ -1,5 +1,5 @@
-const toArray = require('stream-to-array');
-const { inMemoryStorage } = require('../src');
+import toArray from 'stream-to-array';
+import { inMemoryStorage } from '../src';
 
 const jane1 = {
   aggregate: 'user',
