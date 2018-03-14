@@ -9,13 +9,16 @@ const arrayToStream = (arr) => {
 
 export default (events = []) => {
   const projections = {};
+  let snapshots = [];
 
   const storeEvent = async (e) => {
     events.push(e);
   };
 
-  const getEvents = (aggregate, id) =>
-    arrayToStream(events.filter(e => e.aggregate === aggregate && e.id === id));
+  const getEvents = (aggregate, id, fromSequence = -1) => {
+    const filter = e => e.aggregate === aggregate && e.id === id && e.sequence > fromSequence;
+    return arrayToStream(events.filter(filter));
+  };
 
   const getAllEvents = () => arrayToStream(events);
 
@@ -25,7 +28,21 @@ export default (events = []) => {
 
   const getProjection = async name => (projections[name] === undefined ? null : projections[name]);
 
+  const storeSnapshot = async (aggregate, id, projection, snapshot) => {
+    snapshots = snapshots
+      .filter(s => !(s.aggregate === aggregate && s.id === id && s.projection === projection))
+      .concat({
+        aggregate, id, projection, snapshot,
+      });
+  };
+
+  const getSnapshot = async (aggregate, id, projection) => {
+    const res = snapshots
+      .find(s => s.aggregate === aggregate && s.id === id && s.projection === projection);
+    return res ? res.snapshot : undefined;
+  };
+
   return {
-    storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
+    storeEvent, getEvents, getAllEvents, storeProjection, getProjection, storeSnapshot, getSnapshot,
   };
 };

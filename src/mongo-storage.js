@@ -26,9 +26,9 @@ export default (options = {}) => {
     await db.collection(eventsCollection).insertOne(event);
   };
 
-  const getEvents = (aggregate, id) =>
+  const getEvents = (aggregate, id, fromSequence = -1) =>
     db.collection(eventsCollection)
-      .find({ aggregate, id })
+      .find({ aggregate, id, sequence: { $gt: fromSequence } })
       .sort({ sequence: 1 })
       .stream();
 
