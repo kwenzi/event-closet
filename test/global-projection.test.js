@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import Projection from '../src/projection';
+import GlobalProjection from '../src/global-projection';
 import { inMemoryStorage } from '../src';
 
 const nbUsersProjection = (state = 0, event) => {
@@ -15,7 +15,7 @@ const createdEvent = {
 
 test('projection listen to events and replays', async () => {
   const bus = new EventEmitter();
-  const projection = Projection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection);
+  const projection = GlobalProjection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection);
   expect(await projection.getState()).toBe(0);
   bus.emit('event', createdEvent);
   expect(await projection.getState()).toBe(1);
@@ -28,7 +28,7 @@ test('projection listen to events and replays', async () => {
 test('onChange is run on projection change', async () => {
   const bus = new EventEmitter();
   const onChange = jest.fn();
-  const projection = Projection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection, {
+  const projection = GlobalProjection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection, {
     onChange,
   });
   bus.emit('event', createdEvent);

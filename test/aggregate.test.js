@@ -70,5 +70,6 @@ test('save snapshot every 2 event', async () => {
   expect(storage.storeSnapshot).not.toHaveBeenCalled();
 
   await aggregate.handleCommand('user123', 'validate');
+  await new Promise(setImmediate); // storeSnapshot wont be called immediately
   expect(storage.storeSnapshot).toHaveBeenCalledWith('user', 'user123', '__decision__', { sequence: 2, state: { created: true } });
 });

@@ -133,4 +133,5 @@ test('works with snapshots activated', async () => {
 
   expect(await closet.getEntityProjection('user', 'user123', 'identity')).toEqual({ name: 'Calamity Jane' });
   expect(await storage.getSnapshot('user', 'user123', '__decision__')).toEqual({ sequence: 2, state: { created: true } });
+  expect(await storage.getSnapshot('user', 'user123', 'identity')).toEqual({ sequence: 2, state: { name: 'Jane Doe' } });
 });

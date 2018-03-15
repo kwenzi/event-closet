@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import inMemory from './in-memory-storage';
 import mongo from './mongo-storage';
 import Aggregate from './aggregate';
-import Projection from './projection';
+import GlobalProjection from './global-projection';
 import streamPromise from './stream-promise';
 
 export default (options = {}) => {
@@ -32,7 +32,7 @@ export default (options = {}) => {
   };
 
   const registerProjection = (name, onAggregates, projection, opts) => {
-    projections[name] = Projection(storage, bus, name, onAggregates, projection, opts);
+    projections[name] = GlobalProjection(storage, bus, name, onAggregates, projection, opts);
   };
 
   const handleCommand = async (aggregate, id, command, data) =>

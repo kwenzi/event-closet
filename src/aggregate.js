@@ -1,14 +1,34 @@
 import Queue from 'promise-queue';
-import initEvent from './init-event';
-import streamPromise from './stream-promise';
+import EntityProjection from './entity-projection';
+
+const DECISION_PROJECTION_NAME = '__decision__';
 
 export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
   const queues = {};
-  const readProjections = {};
+  const projections = {};
   const commands = {};
 
-  const registerReadProjection = (name, projection) => {
-    readProjections[name] = projection;
+  const registerReadProjection = (name, projection, options = {}) => {
+    const settings = {
+      snapshotEvery,
+      ...options,
+    };
+    const snapshotsActivated = !!settings.snapshotEvery;
+    projections[name] = EntityProjection(
+      storage, aggregate, name,
+      projection, snapshotsActivated,
+    );
+    if (snapshotsActivated) {
+      bus.on('event', async (event) => {
+        try {
+          if (event.sequence % snapshotEvery === 0) {
+            await projections[name].storeSnapshot(event.id);
+          }
+        } catch (err) {
+          // TODO log?
+        }
+      });
+    }
   };
 
   const registerCommand = (name, command) => {
@@ -20,66 +40,24 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
     bus.emit('event', event);
   };
 
-  const getDecisionProjection = async (id) => {
-    let projection;
-    let stream;
-    if (snapshotEvery) {
-      const snapshot = await storage.getSnapshot(aggregate, id, '__decision__');
-      if (snapshot) {
-        projection = snapshot.state;
-        stream = storage.getEvents(aggregate, id, snapshot.sequence);
-      } else {
-        projection = decisionProjection(undefined, initEvent);
-        stream = storage.getEvents(aggregate, id);
-      }
-    } else {
-      projection = decisionProjection(undefined, initEvent);
-      stream = storage.getEvents(aggregate, id);
-    }
-    let sequenceMax = 0;
-    await streamPromise(stream, (event) => {
-      projection = decisionProjection(projection, event);
-      sequenceMax = event.sequence;
-    });
-    return { projection, sequenceMax };
-  };
-
   const handleCommand = async (id, command, data) => {
-    const { projection, sequenceMax } = await getDecisionProjection(id);
-    const res = commands[command](projection, data);
+    const decisionSnapshot = await projections[DECISION_PROJECTION_NAME].getSnapshot(id);
+    const res = commands[command](decisionSnapshot.state, data);
     const newEvents = (Array.isArray(res) ? res : [res])
       .map((e, index) => ({
         ...e,
         aggregate,
         id,
         insertDate: new Date().toISOString(),
-        sequence: sequenceMax + index + 1,
+        sequence: decisionSnapshot.sequence + index + 1,
       }));
-    let newProj = projection;
-    await newEvents
-      .map((e) => {
-        newProj = decisionProjection(newProj, e);
-        if (snapshotEvery && e.sequence % snapshotEvery === 0) {
-          return () => storage.storeSnapshot(aggregate, e.id, '__decision__', { sequence: e.sequence, state: newProj });
-        }
-        return () => Promise.resolve();
-      })
-      .reduce((chain, cur) => chain.then(cur), Promise.resolve());
     await newEvents
       .map(newEvent => () => addEvent(newEvent))
       .reduce((chain, cur) => chain.then(cur), Promise.resolve());
     return Array.isArray(res) ? newEvents : newEvents[0];
   };
 
-  const getProjection = async (id, name) => {
-    const projection = readProjections[name];
-    let state = projection(undefined, initEvent);
-    const stream = storage.getEvents(aggregate, id);
-    await streamPromise(stream, (event) => {
-      state = projection(state, event);
-    });
-    return state;
-  };
+  const getProjection = async (id, name) => projections[name].getState(id);
 
   const putInQueue = (id, f) => {
     if (!queues[id]) {
@@ -87,6 +65,8 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
     }
     return queues[id].add(f);
   };
+
+  registerReadProjection(DECISION_PROJECTION_NAME, decisionProjection);
 
   return {
     registerReadProjection,
