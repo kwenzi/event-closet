@@ -5,10 +5,13 @@ import Aggregate from './aggregate';
 import GlobalProjection from './global-projection';
 import streamPromise from './stream-promise';
 
+const NOOP_LOGGER = { info: () => null, error: () => null };
+
 export default (options = {}) => {
-  const { storage, snapshotEvery } = {
+  const { storage, snapshotEvery, logger } = {
     storage: inMemory(),
     snapshotEvery: null,
+    logger: NOOP_LOGGER,
     ...options,
   };
   const bus = new EventEmitter();
@@ -19,11 +22,15 @@ export default (options = {}) => {
     bus.on('event', callback);
   };
 
-  const registerAggregate = (name, decisionProjection) => {
-    aggregates[name] = Aggregate(storage, bus, name, decisionProjection, snapshotEvery);
+  const registerAggregate = (name, decisionProjection, opts = {}) => {
+    const aggregateOptions = { snapshotEvery, ...opts };
+    aggregates[name] = Aggregate(
+      storage, bus, name, decisionProjection,
+      { snapshotEvery: aggregateOptions.snapshotEvery, logger },
+    );
   };
 
-  const registerEntityProjection = (aggregate, name, projection, opts) => {
+  const registerEntityProjection = (aggregate, name, projection, opts = {}) => {
     aggregates[aggregate].registerReadProjection(name, projection, opts);
   };
 
@@ -44,12 +51,19 @@ export default (options = {}) => {
   const getProjection = async name => projections[name].getState();
 
   const rebuild = async () => {
+    logger.info('beginning rebuild...');
+    let cnt = 0;
     const replayers = Object.values(projections).map(p => p.getReplayer())
       .concat(...Object.values(aggregates).map(a => a.getReplayers()));
     await streamPromise(storage.getAllEvents(), (event) => {
       replayers.forEach(r => r.handleEvent(event));
+      cnt += 1;
+      if (cnt % 100 === 0) {
+        logger.info(`replayed ${cnt} events`);
+      }
     });
     await Promise.all(replayers.map(r => r.finalize()));
+    logger.info('rebuild complete');
   };
 
   return {

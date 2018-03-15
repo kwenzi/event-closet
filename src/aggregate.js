@@ -2,16 +2,23 @@ import Queue from 'promise-queue';
 import EntityProjection from './entity-projection';
 
 const DECISION_PROJECTION_NAME = '__decision__';
+const NOOP_LOGGER = { info: () => null, error: () => null };
 
-export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
+export default (storage, bus, aggregate, decisionProjection, options) => {
+  const { snapshotEvery, logger } = {
+    snapshotEvery: null,
+    logger: NOOP_LOGGER,
+    ...options,
+  };
+
   const queues = {};
   const projections = {};
   const commands = {};
 
-  const registerReadProjection = (name, projection, options = {}) => {
+  const registerReadProjection = (name, projection, options2 = {}) => {
     const settings = {
       snapshotEvery,
-      ...options,
+      ...options2,
     };
     projections[name] = EntityProjection(
       storage, aggregate, name,
@@ -24,7 +31,7 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
             await projections[name].storeSnapshot(event.id);
           }
         } catch (err) {
-          // TODO log?
+          logger.error(`failed to store snapshot ${aggregate}/${name} for entity ${event.id}`, err);
         }
       });
     }

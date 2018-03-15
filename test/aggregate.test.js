@@ -37,7 +37,7 @@ test('command handler can return an array of events', async () => {
   const bus = new EventEmitter();
   const listenerMock = jest.fn();
   bus.on('event', listenerMock);
-  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection, null);
+  const aggregate = Aggregate(inMemoryStorage(), bus, 'user', decisionProjection);
   aggregate.registerCommand('create-validated', createValidatedUser);
 
   await aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' });
@@ -50,7 +50,7 @@ test('command handler can return an array of events', async () => {
 test('use snapshots in storage', async () => {
   const storage = inMemoryStorage();
   storage.getSnapshot = jest.fn().mockReturnValue({ sequence: 2, state: { created: true } });
-  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, 2);
+  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, { snapshotEvery: 2 });
   aggregate.registerCommand('create-validated', createValidatedUser);
 
   await expect(aggregate.handleCommand('user123', 'create-validated', { name: 'John Doe' }))
@@ -62,7 +62,7 @@ test('use snapshots in storage', async () => {
 test('save snapshot every 2 event', async () => {
   const storage = inMemoryStorage();
   storage.storeSnapshot = jest.fn().mockReturnValue(Promise.resolve());
-  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, 2);
+  const aggregate = Aggregate(storage, new EventEmitter(), 'user', decisionProjection, { snapshotEvery: 2 });
   aggregate.registerCommand('create', createUser);
   aggregate.registerCommand('validate', validateUser);
 
