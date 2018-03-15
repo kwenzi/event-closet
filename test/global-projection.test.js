@@ -13,15 +13,11 @@ const createdEvent = {
   aggregate: 'user', id: 'user123', type: 'created', name: 'John Doe',
 };
 
-test('projection listen to events and replays', async () => {
+test('projection listen to events', async () => {
   const bus = new EventEmitter();
   const projection = GlobalProjection(inMemoryStorage(), bus, 'nb-users', ['user'], nbUsersProjection);
   expect(await projection.getState()).toBe(0);
   bus.emit('event', createdEvent);
-  expect(await projection.getState()).toBe(1);
-  await projection.initialize();
-  expect(await projection.getState()).toBe(0);
-  bus.emit('event-replay', createdEvent);
   expect(await projection.getState()).toBe(1);
 });
 

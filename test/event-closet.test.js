@@ -107,16 +107,25 @@ test('register a listener, when an event is added the listener is called', async
   expect(listener.mock.calls[0][0]).toMatchObject(createdEvent('John Doe'));
 });
 
-test('rebuild projections from an existing event history', async () => {
-  const closet = EventCloset({
-    storage: inMemoryStorage([
-      { ...createdEvent('John Doe'), sequence: 0, insertDate: new Date().toISOString() },
-    ]),
-  });
+test('rebuild projections and snapshots from an existing event history', async () => {
+  const storage = inMemoryStorage([
+    { ...createdEvent('John Doe'), sequence: 1, insertDate: new Date().toISOString() },
+  ]);
+  const closet = EventCloset({ storage, snapshotEvery: 1 });
   closet.registerAggregate('user', decisionProjection);
   closet.registerProjection('nb-users', ['user'], nbUsersProjection);
-  await closet.rebuildProjections();
+  closet.registerEntityProjection('user', 'identity', identityProjection);
+  closet.registerEntityProjection('user', 'identity2', identityProjection, { snapshotEvery: 10 });
+  closet.registerEntityProjection('user', 'identity3', identityProjection, { snapshotEvery: null });
+
+  await closet.rebuild();
+
   expect(await closet.getProjection('nb-users')).toBe(1);
+  expect(await closet.getEntityProjection('user', 'user123', 'identity')).toEqual({ name: 'John Doe' });
+  expect(await storage.getSnapshot('user', 'user123', '__decision__')).toEqual({ sequence: 1, state: { created: true } });
+  expect(await storage.getSnapshot('user', 'user123', 'identity')).toEqual({ sequence: 1, state: { name: 'John Doe' } });
+  expect(await storage.getSnapshot('user', 'user123', 'identity2')).toBeUndefined();
+  expect(await storage.getSnapshot('user', 'user123', 'identity3')).toBeUndefined();
 });
 
 test('works with snapshots activated', async () => {

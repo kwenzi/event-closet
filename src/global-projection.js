@@ -23,28 +23,37 @@ export default (storage, bus, name, aggregates, projection, options = {}) => {
     return state;
   };
 
-  const initialize = async () => {
-    await storeState(initialState());
-  };
-
-  const handleEvent = async (event, isReplay) => {
+  const handleEvent = async (event) => {
     if (aggregates.includes(event.aggregate)) {
       const state = await getState();
       const newState = projection(state, event);
       if (!isEqual(state, newState)) {
         await storeState(newState);
-        if (!isReplay) params.onChange(newState, event);
+        params.onChange(newState, event);
       }
     }
   };
 
+  const getReplayer = () => {
+    let state = initialState();
+
+    const handleEvent2 = (event) => {
+      state = projection(state, event);
+    };
+
+    const finalize = async () => {
+      await storeState(state);
+    };
+
+    return { handleEvent: handleEvent2, finalize };
+  };
+
   const putInQueue = f => (...args) => queue.add(() => f(...args));
 
-  bus.on('event', putInQueue(event => handleEvent(event, false)));
-  bus.on('event-replay', putInQueue(event => handleEvent(event, true)));
+  bus.on('event', putInQueue(event => handleEvent(event)));
 
   return {
-    initialize: putInQueue(initialize),
     getState: putInQueue(getState),
+    getReplayer,
   };
 };

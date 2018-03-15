@@ -23,8 +23,8 @@ export default (options = {}) => {
     aggregates[name] = Aggregate(storage, bus, name, decisionProjection, snapshotEvery);
   };
 
-  const registerEntityProjection = (aggregate, name, projection) => {
-    aggregates[aggregate].registerReadProjection(name, projection);
+  const registerEntityProjection = (aggregate, name, projection, opts) => {
+    aggregates[aggregate].registerReadProjection(name, projection, opts);
   };
 
   const registerCommand = (aggregate, name, command) => {
@@ -43,12 +43,13 @@ export default (options = {}) => {
 
   const getProjection = async name => projections[name].getState();
 
-  const rebuildProjections = async () => {
-    await Promise.all(Object.values(projections)
-      .map(projection => projection.initialize()));
+  const rebuild = async () => {
+    const replayers = Object.values(projections).map(p => p.getReplayer())
+      .concat(...Object.values(aggregates).map(a => a.getReplayers()));
     await streamPromise(storage.getAllEvents(), (event) => {
-      bus.emit('event-replay', event);
+      replayers.forEach(r => r.handleEvent(event));
     });
+    await Promise.all(replayers.map(r => r.finalize()));
   };
 
   return {
@@ -60,7 +61,7 @@ export default (options = {}) => {
     handleCommand,
     registerProjection,
     getProjection,
-    rebuildProjections,
+    rebuild,
   };
 };
 

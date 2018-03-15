@@ -13,12 +13,11 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
       snapshotEvery,
       ...options,
     };
-    const snapshotsActivated = !!settings.snapshotEvery;
     projections[name] = EntityProjection(
       storage, aggregate, name,
-      projection, snapshotsActivated,
+      projection, settings.snapshotEvery,
     );
-    if (snapshotsActivated) {
+    if (settings.snapshotEvery) {
       bus.on('event', async (event) => {
         try {
           if (event.sequence % snapshotEvery === 0) {
@@ -59,6 +58,8 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
 
   const getProjection = async (id, name) => projections[name].getState(id);
 
+  const getReplayers = () => Object.values(projections).map(p => p.getReplayer());
+
   const putInQueue = (id, f) => {
     if (!queues[id]) {
       queues[id] = new Queue(1);
@@ -75,5 +76,6 @@ export default (storage, bus, aggregate, decisionProjection, snapshotEvery) => {
       putInQueue(id, () => handleCommand(id, command, data)),
     getProjection: (id, name) =>
       putInQueue(id, () => getProjection(id, name)),
+    getReplayers,
   };
 };
