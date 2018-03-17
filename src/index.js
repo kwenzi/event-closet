@@ -15,6 +15,7 @@ export default (options = {}) => {
     ...options,
   };
   const bus = new EventEmitter();
+  bus.setMaxListeners(100);
   const aggregates = {};
   const projections = {};
 
