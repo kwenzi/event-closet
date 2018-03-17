@@ -3,7 +3,7 @@ import inMemory from './in-memory-storage';
 import mongo from './mongo-storage';
 import Aggregate from './aggregate';
 import GlobalProjection from './global-projection';
-import streamPromise from './stream-promise';
+import consumeStream from './consume-stream';
 
 const NOOP_LOGGER = { info: () => null, error: () => null };
 
@@ -55,7 +55,7 @@ export default (options = {}) => {
     let cnt = 0;
     const replayers = Object.values(projections).map(p => p.getReplayer())
       .concat(...Object.values(aggregates).map(a => a.getReplayers()));
-    await streamPromise(storage.getAllEvents(), (event) => {
+    await consumeStream(storage.getAllEvents(), (event) => {
       replayers.forEach(r => r.handleEvent(event));
       cnt += 1;
       if (cnt % 100 === 0) {

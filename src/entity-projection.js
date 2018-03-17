@@ -1,6 +1,6 @@
 import pickBy from 'lodash/pickBy';
 import INIT_EVENT from './init-event';
-import streamPromise from './stream-promise';
+import consumeStream from './consume-stream';
 
 export default (storage, aggregate, name, projection, snapshotEvery) => {
   const INITIAL_SNAPSHOT = { sequence: 0, state: projection(undefined, INIT_EVENT) };
@@ -15,7 +15,7 @@ export default (storage, aggregate, name, projection, snapshotEvery) => {
   const getSnapshot = async (id) => {
     let { state, sequence } = await getStoredSnapshot(id);
     const events = storage.getEvents(aggregate, id, sequence);
-    await streamPromise(events, (event) => {
+    await consumeStream(events, (event) => {
       state = projection(state, event);
       ({ sequence } = event);
     });
