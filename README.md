@@ -83,6 +83,14 @@ const closet = EventCloset({ /* your options here */ });
 ### storage (default: `inMemoryStorage()`)
 See below to read how storages work.
 
+### snapshotEvery (default: `null`)
+If it's a number, the closet will save snapshots of the entities projections every N events in order to avoid having to replay all the events stack to get the projections state.
+
+If it's `null`, no snapshot will be taken.
+
+### logger (default: no logging)
+An object that has `info` and `error` methods to let the closet write logs.
+
 ## api
 
 ### registerAggregate
@@ -90,9 +98,13 @@ Call this function to add an aggregate to your closet.
 ```javascript
 const name = 'user';
 const decisionProjection = (state, event) => { /* something */ return newState; };
-closet.registerAggregate(name, decisionProjection);
+const options = { snapshotEvery: 50 };
+closet.registerAggregate(name, decisionProjection, options);
 ```
 - `decisionProjection` is the reducer function that will be used to generate the projection in `handleCommand`.
+- `options` can contain the following values:
+  - `snapshotEvery` to override the global `snapshotEvery` option for this aggregate.
+
 
 ### registerEntityProjection
 Call this function to add a projection that we can later apply on a single entity of the aggregate with `getEntityProjection`.
@@ -100,9 +112,12 @@ Call this function to add a projection that we can later apply on a single entit
 const aggregate = 'user';
 const name = 'identity';
 const projection = (state, event) => { /* something */ return newState; }
-closet.registerEntityProjection(aggregate, name, projection);
+const options = { snapshotEvery: 50 };
+closet.registerEntityProjection(aggregate, name, projection, options);
 ```
 - `projection` is the reducer function that will be used to generate the projection in `getEntityProjection`.
+- `options` can contain the following values:
+  - `snapshotEvery` to override the global `snapshotEvery` option for this projection.
 
 ### registerCommand
 Call this function to add a command handler: something that will receive the current decision projection of the entity and some context data and will return the new event(s) to store.
@@ -143,10 +158,15 @@ Call this function to add a new projection to your closet.
 const name = 'nb-users';
 const onAggregates = ['user'];
 const projection = (state, event) => { /* something */ return newState; };
-closet.registerProjection(name, onAggregates, projection);
+const options = {
+  onChange: (state, event) => { /* do something */ }
+};
+closet.registerProjection(name, onAggregates, projection, options);
 ```
 - `onAggregates` is an array of the aggregates we will listen to.
 - `projection` is the reducer function that we will apply to the events.
+- `options` can contain the following values:
+  - `onChange`, a handler that will be called each time the projection changes with 2 arguments: the new state and the event.
 
 ### getProjection
 Call this function to get the current state of a projection.
@@ -161,10 +181,10 @@ Call this function to register a listener to all new events.
 closet.onEvent((event) => { /* do something */ });
 ```
 
-### rebuildProjections
-Projections are persisted in the underlying storage. Call this function to rebuild them from the first event.
+### rebuild
+Projections and snapshots are persisted in the underlying storage. Call this function to rebuild them from the first event.
 ```javascript
-await closet.rebuildProjections();
+await closet.rebuild();
 ```
 
 ## storage
@@ -233,6 +253,12 @@ const storage = {
   },
   getProjection: async (name) => {
     // get a read projection
+  },
+  storeSnapshot: async (aggregate, id, projection, snapshot) => {
+    // store a snapshot
+  },
+  getSnapshot: async (aggregate, id, projection) => {
+    // get a snapshot
   },
 };
 const closet = EventCloset({ storage });
