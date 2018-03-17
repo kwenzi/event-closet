@@ -59,7 +59,7 @@ export default (options = {}) => {
     await consumeStream(storage.getAllEvents(), (event) => {
       replayers.forEach(r => r.handleEvent(event));
       cnt += 1;
-      if (cnt % 100 === 0) {
+      if (cnt % 1000 === 0) {
         logger.info(`replayed ${cnt} events`);
       }
     });
