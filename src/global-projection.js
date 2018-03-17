@@ -1,5 +1,4 @@
 import Queue from 'promise-queue';
-import isEqual from 'lodash/isEqual';
 import initEvent from './init-event';
 
 export default (storage, bus, name, aggregates, projection, options = {}) => {
@@ -27,10 +26,8 @@ export default (storage, bus, name, aggregates, projection, options = {}) => {
     if (aggregates.includes(event.aggregate)) {
       const state = await getState();
       const newState = projection(state, event);
-      if (!isEqual(state, newState)) {
-        await storeState(newState);
-        params.onChange(newState, event);
-      }
+      await storeState(newState);
+      params.onChange(newState, event);
     }
   };
 

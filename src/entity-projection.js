@@ -1,4 +1,3 @@
-import pickBy from 'lodash/pickBy';
 import INIT_EVENT from './init-event';
 import consumeStream from './consume-stream';
 
@@ -50,9 +49,9 @@ export default (storage, aggregate, name, projection, snapshotEvery) => {
     };
 
     const finalize = async () => {
-      const toSave = pickBy(snapshots, snapshot => snapshot.sequence >= snapshotEvery);
-      const promises = Object.keys(toSave)
-        .map(id => storage.storeSnapshot(aggregate, id, name, toSave[id]));
+      const promises = Object.keys(snapshots)
+        .filter(id => snapshots[id].sequence >= snapshotEvery)
+        .map(id => storage.storeSnapshot(aggregate, id, name, snapshots[id]));
       await Promise.all(promises);
     };
 

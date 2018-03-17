@@ -19,10 +19,8 @@
   },
   "homepage": "https://github.com/kwenzi/event-closet#readme",
   "dependencies": {
-    "lodash": "^4.17.4",
     "mongodb": "^2.2.34",
-    "promise-queue": "^2.2.3",
-    "through": "^2.3.8"
+    "promise-queue": "^2.2.3"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
