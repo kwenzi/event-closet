@@ -38,7 +38,9 @@ export default (storage, bus, name, aggregates, projection, options = {}) => {
     let state = initialState();
 
     const handleEvent2 = (event) => {
-      state = projection(state, event);
+      if (aggregates.includes(event.aggregate)) {
+        state = projection(state, event);
+      }
     };
 
     const finalize = async () => {
