@@ -4,16 +4,16 @@ import mongo from './mongo-storage';
 import Aggregate from './aggregate';
 import GlobalProjection from './global-projection';
 import consumeStream from './consume-stream';
+import getOptions from './get-options';
 
 const NOOP_LOGGER = { info: () => null, error: () => null };
 
 export default (options = {}) => {
-  const { storage, snapshotEvery, logger } = {
+  const { storage, snapshotEvery, logger } = getOptions(options, {
     storage: inMemory(),
     snapshotEvery: null,
     logger: NOOP_LOGGER,
-    ...options,
-  };
+  });
   const bus = new EventEmitter();
   bus.setMaxListeners(100);
   const aggregates = {};
@@ -23,24 +23,24 @@ export default (options = {}) => {
     bus.on('event', callback);
   };
 
-  const registerAggregate = (name, decisionProjection, opts = {}) => {
-    const aggregateOptions = { snapshotEvery, ...opts };
+  const registerAggregate = (name, decisionProjection, aggregateOptions = {}) => {
+    const aggregateOpts = getOptions(aggregateOptions, { snapshotEvery });
     aggregates[name] = Aggregate(
       storage, bus, name, decisionProjection,
-      { snapshotEvery: aggregateOptions.snapshotEvery, logger },
+      { snapshotEvery: aggregateOpts.snapshotEvery, logger },
     );
   };
 
-  const registerEntityProjection = (aggregate, name, projection, opts = {}) => {
-    aggregates[aggregate].registerReadProjection(name, projection, opts);
+  const registerEntityProjection = (aggregate, name, projection, projOptions = {}) => {
+    aggregates[aggregate].registerReadProjection(name, projection, projOptions);
   };
 
   const registerCommand = (aggregate, name, command) => {
     aggregates[aggregate].registerCommand(name, command);
   };
 
-  const registerProjection = (name, onAggregates, projection, opts) => {
-    projections[name] = GlobalProjection(storage, bus, name, onAggregates, projection, opts);
+  const registerProjection = (name, onAggregates, projection, projOptions = {}) => {
+    projections[name] = GlobalProjection(storage, bus, name, onAggregates, projection, projOptions);
   };
 
   const handleCommand = async (aggregate, id, command, data) =>

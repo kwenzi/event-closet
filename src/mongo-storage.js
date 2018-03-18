@@ -1,15 +1,15 @@
 import { MongoClient } from 'mongodb';
+import getOptions from './get-options';
 
 export default (options = {}) => {
-  const opts = {
+  const opts = getOptions(options, {
     eventsCollection: 'events',
     projectionsCollection: 'projections',
     snapshotsCollection: 'snapshots',
     url: '',
     connectOptions: {},
     db: null,
-    ...options,
-  };
+  });
   const {
     eventsCollection, projectionsCollection, snapshotsCollection, url, connectOptions,
   } = opts;

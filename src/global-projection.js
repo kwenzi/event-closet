@@ -1,11 +1,9 @@
 import Queue from 'promise-queue';
 import initEvent from './init-event';
+import getOptions from './get-options';
 
 export default (storage, bus, name, aggregates, projection, options = {}) => {
-  const params = {
-    onChange: () => null,
-    ...options,
-  };
+  const { onChange } = getOptions(options, { onChange: () => null });
   const queue = new Queue(1);
 
   const storeState = async (state) => {
@@ -27,7 +25,7 @@ export default (storage, bus, name, aggregates, projection, options = {}) => {
       const state = await getState();
       const newState = projection(state, event);
       await storeState(newState);
-      params.onChange(newState, event);
+      onChange(newState, event);
     }
   };
 

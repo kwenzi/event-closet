@@ -1,5 +1,6 @@
 import Queue from 'promise-queue';
 import EntityProjection from './entity-projection';
+import getOptions from './get-options';
 
 const DECISION_PROJECTION_NAME = '__decision__';
 const NOOP_LOGGER = { info: () => null, error: () => null };
@@ -15,19 +16,16 @@ export default (storage, bus, aggregate, decisionProjection, options) => {
   const projections = {};
   const commands = {};
 
-  const registerReadProjection = (name, projection, options2 = {}) => {
-    const settings = {
-      snapshotEvery,
-      ...options2,
-    };
+  const registerReadProjection = (name, projection, projOptions = {}) => {
+    const projOpts = getOptions(projOptions, { snapshotEvery });
     projections[name] = EntityProjection(
       storage, aggregate, name,
-      projection, settings.snapshotEvery,
+      projection, projOpts.snapshotEvery,
     );
-    if (settings.snapshotEvery) {
+    if (projOpts.snapshotEvery) {
       bus.on('event', async (event) => {
         try {
-          if (event.sequence % snapshotEvery === 0) {
+          if (event.sequence % projOpts.snapshotEvery === 0) {
             await projections[name].storeSnapshot(event.id);
           }
         } catch (err) {

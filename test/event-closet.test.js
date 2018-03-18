@@ -140,7 +140,33 @@ test('works with snapshots activated', async () => {
   await closet.handleCommand('user', 'user123', 'rename', { name: 'Jane Doe' });
   await closet.handleCommand('user', 'user123', 'rename', { name: 'Calamity Jane' });
 
+  await new Promise(setImmediate); // wait for snapshots creation
   expect(await closet.getEntityProjection('user', 'user123', 'identity')).toEqual({ name: 'Calamity Jane' });
   expect(await storage.getSnapshot('user', 'user123', '__decision__')).toEqual({ sequence: 2, state: { created: true } });
   expect(await storage.getSnapshot('user', 'user123', 'identity')).toEqual({ sequence: 2, state: { name: 'Jane Doe' } });
+});
+
+test('snapshotEvery option in registerAggregate overrides the global option', async () => {
+  const storage = inMemoryStorage();
+  const closet = EventCloset({ storage });
+  closet.registerAggregate('user', decisionProjection, { snapshotEvery: 1 });
+  closet.registerCommand('user', 'create', createUser);
+
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
+
+  await new Promise(setImmediate); // wait for snapshots creation
+  expect(await storage.getSnapshot('user', 'user123', '__decision__')).toEqual({ sequence: 1, state: { created: true } });
+});
+
+test('snapshotEvery option in registerEntityProjection overrides the global option', async () => {
+  const storage = inMemoryStorage();
+  const closet = EventCloset({ storage });
+  closet.registerAggregate('user', decisionProjection);
+  closet.registerEntityProjection('user', 'identity', identityProjection, { snapshotEvery: 1 });
+  closet.registerCommand('user', 'create', createUser);
+
+  await closet.handleCommand('user', 'user123', 'create', { name: 'John Doe' });
+
+  await new Promise(setImmediate); // wait for snapshots creation
+  expect(await storage.getSnapshot('user', 'user123', 'identity')).toEqual({ sequence: 1, state: { name: 'John Doe' } });
 });
