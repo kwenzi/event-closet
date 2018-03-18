@@ -119,6 +119,8 @@ closet.registerEntityProjection(aggregate, name, projection, options);
 - `options` can contain the following values:
   - `snapshotEvery` to override the global `snapshotEvery` option for this projection.
 
+⚠️ don't use the name "`__decision__`", it is a reserved name for storing the decision projection.
+
 ### registerCommand
 Call this function to add a command handler: something that will receive the current decision projection of the entity and some context data and will return the new event(s) to store.
 ```javascript
