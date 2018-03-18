@@ -4,13 +4,14 @@ export default (options = {}) => {
   const opts = {
     eventsCollection: 'events',
     projectionsCollection: 'projections',
+    snapshotsCollection: 'snapshots',
     url: '',
     connectOptions: {},
     db: null,
     ...options,
   };
   const {
-    eventsCollection, projectionsCollection, url, connectOptions,
+    eventsCollection, projectionsCollection, snapshotsCollection, url, connectOptions,
   } = opts;
   let { db } = opts;
 
@@ -48,7 +49,31 @@ export default (options = {}) => {
     return (res ? res.state : null);
   };
 
+  const storeSnapshot = async (aggregate, id, projection, snapshot) => {
+    await db.collection(snapshotsCollection)
+      .replaceOne(
+        { aggregate, id, projection },
+        {
+          aggregate, id, projection, snapshot,
+        },
+        { upsert: true },
+      );
+  };
+
+  const getSnapshot = async (aggregate, id, projection) => {
+    const res = await db.collection(projectionsCollection).findOne({ aggregate, id, projection });
+    return (res ? res.snapshot : undefined);
+  };
+
   return {
-    connect, close, storeEvent, getEvents, getAllEvents, storeProjection, getProjection,
+    connect,
+    close,
+    storeEvent,
+    getEvents,
+    getAllEvents,
+    storeProjection,
+    getProjection,
+    storeSnapshot,
+    getSnapshot,
   };
 };
