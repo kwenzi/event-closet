@@ -242,11 +242,12 @@ const storage = {
   storeEvent: async (event) => {
     // store a new event
   },
-  getEvents: (aggregate, id) => {
-    // return a Readable Stream of events
+  getEvents: (aggregate, id, fromSequence) => {
+    // return a Readable Stream of events sorted by sequence
+    // if fromSequence is provided, return only events of higher sequence
   },
   getAllEvents: () => {
-    // return a Readable Stream of events
+    // return a Readable Stream of events sorted by insertDate then sequence
   },
   storeProjection: async (name, state) => {
     // store a read projection
